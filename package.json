@@ -1,0 +1,24 @@
+{
+    "name": "mapgame-discord-bot",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Phyrik/mapgame-discord-bot.git"
+    },
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/Phyrik/mapgame-discord-bot/issues"
+    },
+    "homepage": "https://github.com/Phyrik/mapgame-discord-bot#readme",
+    "dependencies": {
+        "discord.js": "^12.2.0",
+        "firebase": "^7.17.1",
+        "firebase-admin": "^9.0.0"
+    }
+}
