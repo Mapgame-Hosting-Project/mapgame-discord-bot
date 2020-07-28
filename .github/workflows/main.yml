@@ -23,6 +23,10 @@ jobs:
       run: python ./python_workflow.py
     - name: check for changes
       run: git status
+    - name: set up git config
+      run: |
+      git config --global user.name 'Phyrik'
+      git config --global user.email 'Phyrik@users.noreply.github.com'
     - name: stage changed files
       run: git add .
     - name: commit changed files
