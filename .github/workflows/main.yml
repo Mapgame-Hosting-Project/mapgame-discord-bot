@@ -1,0 +1,35 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Run a one-line script
+      run: python ./python_workflow.py
+    - name: switching from HTTPS to SSH
+      run: git remote set-url origin ${{ secrets.ssh }}
+    - name: check for changes
+      run: git status
+    - name: stage changed files
+      run: git add .
+    - name: commit changed files
+      run: git commit -m "Auto updating TODO.txt"
+    - name: fetch from master
+      run: git fetch origin master
+    - name: push code to master
+      run: git push origin HEAD:master
