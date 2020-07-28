@@ -1,4 +1,4 @@
-# Mapgame Discord Bot <!-- omit in toc -->
+# Mapgame Discord Bot
 
 ## A bot to help you with your mapgame server. <!-- omit in toc -->
 
