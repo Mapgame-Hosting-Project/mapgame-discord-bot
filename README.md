@@ -2,7 +2,7 @@
 
 ## A bot to help you with your mapgame server. <!-- omit in toc -->
 
-### DISCLAIMER: this bot is still WIP, so I would advise against using it as of now
+### DISCLAIMER: this bot is still WIP, so I would advise against adding it to your server as of now
 
 ## Table of contents <!-- omit in toc -->
 - [Add the bot to your server](#add-the-bot-to-your-server)
