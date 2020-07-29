@@ -10,6 +10,10 @@ admin.initializeApp({
 })
 var db = admin.database()
 
+const childProcess = require("child_process")
+
+const fs = require("fs")
+
 client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}!`)
 })
@@ -99,11 +103,11 @@ function handleCommand(msg, command, args) {
                                     break;
                                 }
 
-                                cMsg.channel.send("What role should I give members when they join? To skip this step, send a message with 'skip'. Make sure to send the name of the role, rather than mentioning it.")
+                                cMsg.channel.send("What role should I give members when they join? Make sure to send the name of the role, rather than mentioning it. To skip this step, send a message with 'skip'.")
                                 break;
 
                             case 2:
-                                cMsg.channel.send("What information about a member's nation will they have to provide when registering? (Don't worry about including a field about map claims, the bot will handle that all for you!")
+                                cMsg.channel.send("What information about a member's nation will they have to provide when registering? (Don't worry about including a field about map claims or country colour, the bot will handle that all for you!)")
                                 var embed = new Discord.MessageEmbed()
                                     .setColor("#009900")
                                     .setTitle("Registration information")
@@ -148,7 +152,16 @@ function handleCommand(msg, command, args) {
                     console.log(listOfFieldsForRegistration.length)
 
                     if (collector.collected.size == listOfFieldsForRegistration.length) {
+                        cMsg.channel.send("Now to do your initial map claim. Follow the instructions below.")
+                        var embed = new Discord.MessageEmbed()
+                            .setColor("#009900")
+                            .setTitle("Map claim instructions")
+                            .addField("How to get your map claim code", "Visit the website [here](https://phyrik.github.io/mapgame-discord-bot/map-province-picker.html) and follow the instructions to generate your mapgame code.")
+                            .addField("Ok... what now?", "Simply copy paste that code and send it here! Once you've done that, you will get a confirmation message.")
+                        cMsg.channel.send(embed)
+
                         collector.stop()
+
                         return
                     }
 
@@ -218,18 +231,13 @@ function handleCommand(msg, command, args) {
             */
             break;
 
-        case "register-nation":
-            break;
-
-        case "google-sheets-test":
-            const sheets = google.sheets({ version: 'v4', auth });
-            sheets.spreadsheets.values.get({
-                spreadsheetId: nationRegistrationGoogleFormSpreadsheetID,
-                range: nationRegistrationGoogleFormSpreadsheetSheetName,
-            }, (err, res) => {
-                if (err) return console.log('The API returned an error: ' + err);
-                console.log(rows)
-            });
+        case "map-code-test":
+            generateMapFromMapCode(args[0]).then(map => {
+                console.log(map)
+                msg.channel.send({
+                    files: [map]
+                })
+            })
             break;
 
         default:
@@ -300,6 +308,18 @@ function initRegistrationQuestionSetup(cMsg, embed, embedMessage, collector, gui
             welcomeChannelID: welcomeChannelID,
             autoRoleRoleName: autoRoleRoleName,
             listOfFieldsForRegistration: listOfFieldsForRegistration
+        })
+    })
+}
+
+async function generateMapFromMapCode(code) {
+    var spawn = childProcess.spawn
+    var pythonProcess = spawn("python", ["generate-map.py", code])
+
+    return new Promise((resolve, reject) => {
+        pythonProcess.stdout.on("data", data => {
+            console.log(data.toString())
+            resolve(data.toString().replace(/\r?\n|\r/g, ""))
         })
     })
 }
