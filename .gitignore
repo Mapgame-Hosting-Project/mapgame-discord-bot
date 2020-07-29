@@ -106,3 +106,4 @@ dist
 # Discord files and privacy
 config.json
 git-setup.py
+mapgame-discord-bot*.json

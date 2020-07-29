@@ -3,7 +3,7 @@ const client = new Discord.Client()
 const config = require("./config.json")
 
 var admin = require("firebase-admin")
-var serviceAccount = require("./mapgame-discord-bot-firebase-adminsdk-gvqej-2e4996406e.json")
+var serviceAccount = require(config.firebase_token_path)
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     databaseURL: "https://mapgame-discord-bot.firebaseio.com/"
