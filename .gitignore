@@ -107,3 +107,5 @@ dist
 config.json
 git-setup.py
 mapgame-discord-bot*.json
+mapImages/
+!mapImages/epic map.png

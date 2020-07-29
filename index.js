@@ -160,9 +160,30 @@ function handleCommand(msg, command, args) {
                             .addField("Ok... what now?", "Simply copy paste that code and send it here! Once you've done that, you will get a confirmation message.")
                         cMsg.channel.send(embed)
 
-                        collector.stop()
+                        return
+                    }
+
+                    if (collector.collected.size == listOfFieldsForRegistration.length + 1) {
+                        generateMapFromMapCode(cMsg.content).then(mapPath => {
+                            cMsg.channel.send("Is this claim ok? (yes/no)", { files: [mapPath] })
+                        })
 
                         return
+                    }
+
+                    if (collector.collected.size == listOfFieldsForRegistration.length + 2) {
+                        if (cMsg.content == "yes" || cMsg.content == "y") {
+                            collector.stop()
+
+                            return
+                        } else {
+                            collector.collected.delete(collector.collected.lastKey())
+                            collector.collected.delete(collector.collected.lastKey())
+
+                            cMsg.send("Send another map claim code from the website (https://phyrik.github.io/mapgame-discord-bot/map-province-picker.html).")
+
+                            return
+                        }
                     }
 
                     cMsg.channel.send(listOfFieldsForRegistration[collector.collected.size] + ":")
@@ -171,7 +192,7 @@ function handleCommand(msg, command, args) {
                 collector.on("end", collected => {
                     try {
                         var answers = []
-                        collected.array().forEach(message => {
+                        collected.array().slice(0, listOfFieldsForRegistration.length).forEach(message => {
                             answers.push(message.content)
                         });
 
@@ -183,6 +204,7 @@ function handleCommand(msg, command, args) {
                             console.log(formJSONObject[listOfFieldsForRegistration[i]] + ": " + answers[i])
                         }
                         formJSONObject["status"] = "pendingApproval"
+                        formJSONObject["mapClaimCode"] = collected.array()[listOfFieldsForRegistration.length].content
 
                         console.log(formJSONObject)
 
@@ -229,15 +251,6 @@ function handleCommand(msg, command, args) {
                 embedMsg.react("1️⃣").then(() => embedMsg.react("2️⃣").then(() => embedMsg.react("3️⃣").then(() => embedMsg.react("4️⃣").then(() => embedMsg.react("5️⃣")))))
             })
             */
-            break;
-
-        case "map-code-test":
-            generateMapFromMapCode(args[0]).then(map => {
-                console.log(map)
-                msg.channel.send({
-                    files: [map]
-                })
-            })
             break;
 
         default:
