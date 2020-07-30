@@ -6,7 +6,7 @@ function handleMainCanvasClick(canvas, event) {
     alert(canvas.getContext("2d").getImageData(event.offsetX, event.offsetY, 1, 1).data)
 }
 
-fetch("../res/colours with coords.json").then(response => response.json()).then(coloursWithCoordsJSON => {
+fetch("res/colours with coords.json").then(response => response.json()).then(coloursWithCoordsJSON => {
     alert(coloursWithCoordsJSON)
     var canvas = document.getElementById("main-canvas")
     var canvasCTX = canvas.getContext("2d")
