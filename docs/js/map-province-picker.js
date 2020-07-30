@@ -3,6 +3,7 @@ function handleMainCanvasClick(canvas, event) {
     const x = Math.round(event.clientX - rect.left)
     const y = Math.round(event.clientY - rect.top)
     alert("x: " + x + ", y: " + y)
+    alert(canvas.getContext("2d").getImageData(event.offsetX, event.offsetY, 1, 1).data)
 }
 
 var canvas = document.getElementById("main-canvas")
