@@ -5,6 +5,7 @@ function handleMainCanvasClick(canvas, event, coloursWithCoordsJSON) {
     var clickColourData = canvas.getContext("2d").getImageData(event.offsetX, event.offsetY, 1, 1).data
 
     for (var i = 0; i < coloursWithCoordsJSON.main.length; i++) {
+        console.log(coloursWithCoordsJSON.main[i])
         if (coloursWithCoordsJSON.main[i][1] == clickColourData) {
             return coloursWithCoordsJSON.main[i][0]
         }
