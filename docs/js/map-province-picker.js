@@ -2,7 +2,7 @@ function handleMainCanvasClick(canvas, event) {
     const rect = canvas.getBoundingClientRect()
     const x = event.clientX - rect.left
     const y = event.clientY - rect.top
-    alert("x: " + x + "y: " + y)
+    alert("x: " + x + ", y: " + y)
 }
 
 var canvas = document.getElementById("main-canvas")
