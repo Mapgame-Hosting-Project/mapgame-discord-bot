@@ -10,6 +10,7 @@ function handleMainCanvasClick(canvas, event, coloursWithCoordsJSON) {
             console.log(coloursWithCoordsJSON.main[i][1])
         }
         if (coloursWithCoordsJSON.main[i][1] == Array.from(clickColourData)) {
+            console.log(coloursWithCoordsJSON.main[i][0])
             return coloursWithCoordsJSON.main[i][0]
         }
     }
