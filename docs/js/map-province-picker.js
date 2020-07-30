@@ -1,7 +1,7 @@
 function handleMainCanvasClick(canvas, event) {
     const rect = canvas.getBoundingClientRect()
-    const x = event.clientX - rect.left
-    const y = event.clientY - rect.top
+    const x = Math.round(event.clientX - rect.left)
+    const y = Math.round(event.clientY - rect.top)
     alert("x: " + x + ", y: " + y)
 }
 
