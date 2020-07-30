@@ -42,7 +42,7 @@ function handleProvinceClick(pixelToAddToCode) {
     var mapClaimCode = constructMapCode(pixelToAddToCode, document.getElementById("colour-input").value)
     var mapCodeTextInput = document.getElementById("map-code-text-input")
 
-    if (mapCodeTextInput.value.contains(mapClaimCode)) {
+    if (mapCodeTextInput.value.includes(mapClaimCode)) {
         mapCodeTextInput.value.replace(mapClaimCode, "")
     } else {
         mapCodeTextInput.value += mapClaimCode
