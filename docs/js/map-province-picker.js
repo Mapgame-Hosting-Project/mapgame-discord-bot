@@ -33,9 +33,11 @@ fetch("res/colours with coords.json").then(response => response.json()).then(col
         handleProvinceClick(pixelToAddToCode)
     })
     document.getElementById("copy-button").addEventListener("click", () => {
+        document.querySelector("#map-code-text-input").value = document.querySelector("#map-code-text-input").value.substring(0, document.querySelector("#map-code-text-input").value.length - 1)
         document.querySelector("#map-code-text-input").select()
         document.execCommand("copy")
         alert("Copied map claim code!")
+        document.querySelector("#map-code-text-input").value += ","
     })
 })
 
