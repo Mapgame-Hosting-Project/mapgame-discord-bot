@@ -202,13 +202,13 @@ function handleCommand(msg, command, args) {
                                 });
 
                                 var formJSONObject = {
-                                    fields = []
+                                    fields: {}
                                 }
                                 console.log(listOfFieldsForRegistration)
                                 for (var i = 0; i < listOfFieldsForRegistration.length; i++) {
                                     console.log("sb1")
                                     formJSONObject.fields[listOfFieldsForRegistration[i]] = answers[i]
-                                    console.log(formJSONObject.fields[listOfFieldsForRegistration[i]] + ": " + answers[i])
+                                    console.log(listOfFieldsForRegistration[i] + ": " + answers[i])
                                 }
                                 formJSONObject["status"] = "pendingApproval"
                                 formJSONObject["mapClaimCode"] = collected.array()[listOfFieldsForRegistration.length].content
