@@ -39,7 +39,7 @@ function handleProvinceClick(pixelToAddToCode) {
         return
     }
 
-    var mapClaimCode = constructMapCode(pixelToAddToCode, document.getElementById("colour-picker").value)
+    var mapClaimCode = constructMapCode(pixelToAddToCode, document.getElementById("colour-input").value)
     var mapCodeTextInput = document.getElementById("map-code-text-input")
 
     if (mapCodeTextInput.value.contains(mapClaimCode)) {
