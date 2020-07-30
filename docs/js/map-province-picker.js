@@ -6,11 +6,7 @@ function handleMainCanvasClick(canvas, event, coloursWithCoordsJSON) {
     console.log(Array.from(clickColourData))
 
     for (var i = 0; i < coloursWithCoordsJSON.main.length; i++) {
-        if (i == 0) {
-            console.log(coloursWithCoordsJSON.main[i][1])
-            console.log(coloursWithCoordsJSON.main[i][1] == Array.from(clickColourData))
-        }
-        if (coloursWithCoordsJSON.main[i][1] == Array.from(clickColourData)) {
+        if (coloursWithCoordsJSON.main[i][1][0] == clickColourData[0] && coloursWithCoordsJSON.main[i][1][1] == clickColourData[1] && coloursWithCoordsJSON.main[i][1][2] == clickColourData[2] && coloursWithCoordsJSON.main[i][1][3] == clickColourData[3]) {
             console.log(coloursWithCoordsJSON.main[i][0])
             return coloursWithCoordsJSON.main[i][0]
         }
