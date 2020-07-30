@@ -201,12 +201,14 @@ function handleCommand(msg, command, args) {
                                     answers.push(message.content)
                                 });
 
-                                var formJSONObject = {}
+                                var formJSONObject = {
+                                    fields = []
+                                }
                                 console.log(listOfFieldsForRegistration)
                                 for (var i = 0; i < listOfFieldsForRegistration.length; i++) {
                                     console.log("sb1")
-                                    formJSONObject[listOfFieldsForRegistration[i]] = answers[i]
-                                    console.log(formJSONObject[listOfFieldsForRegistration[i]] + ": " + answers[i])
+                                    formJSONObject.fields[listOfFieldsForRegistration[i]] = answers[i]
+                                    console.log(formJSONObject.fields[listOfFieldsForRegistration[i]] + ": " + answers[i])
                                 }
                                 formJSONObject["status"] = "pendingApproval"
                                 formJSONObject["mapClaimCode"] = collected.array()[listOfFieldsForRegistration.length].content
@@ -217,7 +219,8 @@ function handleCommand(msg, command, args) {
                                 ref.update(formJSONObject)
 
                                 collected.array()[0].channel.send("Done! Your registration form is now submitted.")
-                            } catch {
+                            } catch (e) {
+                                console.log(e)
                                 collected.array()[0].channel.send("Whoops! There was something wrong with submitting your form.")
                             }
                         })
