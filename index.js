@@ -13,6 +13,7 @@ var db = admin.database()
 const childProcess = require("child_process")
 
 const fs = require("fs")
+const { formatWithOptions } = require("util")
 
 client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}!`)
@@ -100,14 +101,14 @@ function handleCommand(msg, command, args) {
                                     break;
                                 }
 
-                                cMsg.channel.send("What role should I give members when they join? make sure to mention the role. To skip this step, send a message with 'skip'.")
+                                cMsg.channel.send("What role should I give members when they join? Make sure to mention the role. To skip this step, send a message with 'skip'.")
                                 break;
 
                             case 2:
                                 if (getUserFromMention(cMsg.content, true, client.guilds.cache.get(guildID)) == "invalid mention") {
                                     cMsg.channel.send("Invalid role.")
                                     collector.collected.delete(collector.collected.lastKey())
-                                    msg.channel.send("What role should I give members when they join? make sure to mention the role. To skip this step, send a message with 'skip'.")
+                                    msg.channel.send("What role should I give members when they join? Make sure to mention the role. To skip this step, send a message with 'skip'.")
                                     break;
                                 }
 
@@ -319,18 +320,10 @@ function initRegistrationQuestionSetup(cMsg, embed, embedMessage, collector, gui
 
     var fieldCollectionCompleted = false
     var nicknameTemplateCompleted = false
-    var channelTemplateCompleted = false
+    var nationChannelBool
+    var channelTemplateAsked = false
     collector2.on("collect", fMsg => {
-        if (nicknameTemplateCompleted) {
-            if (fMsg.content == "skip") {
-                collector2.stop()
-
-                fMsg.channel.send("Done! Channel template skipped.")
-                fMsg.channel.send("Your server is now setup. Type " + config.prefix + "help to see a list of commands you can use.")
-
-                return
-            }
-
+        if (channelTemplateAsked) {
             var channelTemplateCheck = checkFieldNameTemplateValidity(fMsg.content, listOfFieldsForRegistration, false)
 
             if (channelTemplateCheck == false) {
@@ -339,90 +332,114 @@ function initRegistrationQuestionSetup(cMsg, embed, embedMessage, collector, gui
                 fMsg.channel.send("Something went wrong with processing that channel template...try making sure it is valid and everything is spelt right, then send it again.")
 
                 return
+
             } else if (channelTemplateCheck == true) {
                 collector2.stop()
 
                 fMsg.channel.send("Done! Channel template completed.")
+                fMsg.channel.send("Your server is now setup. Type " + config.prefix + "help to see a list of commands you can use.")
 
                 channelTemplateCompleted = true
 
                 return
             }
-
         } else {
 
-            if (fieldCollectionCompleted) {
-                if (fMsg.content == "skip") {
-                    fMsg.channel.send("Done! Nickname template skipped.")
+            if (nicknameTemplateCompleted) {
+                if (fMsg.content == "yes") {
+                    nationChannelBool = true
 
-                    nicknameTemplateCompleted = true
-
-                    fMsg.channel.send("Next step: What should the channel created for a new nation be called?")
+                    fMsg.channel.send("Ok, follow the instructions below to set it up.")
                     var embed2 = new Discord.MessageEmbed()
+                        .setTitle("Custom nation channel setup")
                         .setColor("#009900")
-                        .setTitle("Custom channel")
-                        .addField("Instructions:", "Send a message of what the name of the channel created for a member's nation should be called. Use the same templating rules as with the nickname setup, putting square brackets around field names to insert them. All spaces will be turned into dashes ('-') when the channel is created.")
-                        .addField("Don't want to do this step?", "If so, simply send \"skip\"")
+                        .addField("Instructions:", "Send a message of what the channel will be called. Use the same method as with nicknames to add answers from the form, surrounding the field name with square brackets. All spaces will be turned to dashes ('-') when the channel is created.")
+                        .addField("Don't want to do this step?", "I literally just asked you...fine...send \"skip\" and you'll be on your way.")
                     fMsg.channel.send(embed2)
 
+                    channelTemplateAsked = true
+
                     return
-                }
+                } else if (fMsg.content == "no") {
+                    nationChannelBool = false
 
-                var nicknameTemplateCheck = checkFieldNameTemplateValidity(fMsg.content, listOfFieldsForRegistration)
+                    fMsg.channel.send("Done! Channel template skipped.")
+                    fMsg.channel.send("Your server is now setup. Type " + config.prefix + "help to see a list of commands you can use.")
 
-                if (nicknameTemplateCheck == false) {
+                    collector2.stop()
+
+                    return
+                } else {
                     collector2.collected.delete(collector2.collected.lastKey())
 
-                    fMsg.channel.send("Something went wrong with processing that nickname template...try making sure it is valid and everything is spelt right, then send it again.")
-
-                    return
-                } else if (nicknameTemplateCheck == true) {
-                    fMsg.channel.send("Done! Nickname template completed.")
-
-                    nicknameTemplateCompleted = true
-
-                    fMsg.channel.send("Next step: What should the channel created for a new nation be called?")
-                    var embed2 = new Discord.MessageEmbed()
-                        .setColor("#009900")
-                        .setTitle("Custom channel")
-                        .addField("Instructions:", "Send a message of what the name of the channel created for a member's nation should be called. Use the same templating rules as with the nickname setup, putting square brackets around field names to insert them. All spaces will be turned into dashes ('-') when the channel is created.")
-                        .addField("Don't want to do this step?", "If so, simply send \"skip\"")
-                    fMsg.channel.send(embed2)
+                    fMsg.channel.send("Sorry, I don't know what to do with that answer. Try again, making sure you answer is yes or no.")
 
                     return
                 }
 
             } else {
 
-                if (fMsg.content == "done") {
-                    fMsg.channel.send("Done. Form completed.")
+                if (fieldCollectionCompleted) {
+                    if (fMsg.content == "skip") {
+                        fMsg.channel.send("Done! Nickname template skipped.")
 
-                    fieldCollectionCompleted = true
+                        nicknameTemplateCompleted = true
 
-                    fMsg.channel.send("Ok, now we're getting down to the good stuff... Set up members' custom nicknames following the instructions below:")
-                    var embed1 = new Discord.MessageEmbed()
-                        .setColor("#009900")
-                        .setTitle("Custom nickname setup")
-                        .addField("Instructions:", "Send a message of how members' nicknames should change after registering below. To insert an answer from a field type '[fieldname]'. To insert the member's original username type '[username]'")
-                        .addField("Example:", "If I have a field called 'Nation name', I could send \"[username] | [Nation name]\" which would turn in to, for example, 'Mapgame Bot | My Epic Nation Name'.")
-                        .addField("Don't want to do this step?", "If so, simply send \"skip\"")
-                    fMsg.channel.send(embed1)
+                        fMsg.channel.send("When a meber registers a new nation, should a channel be created for that nation? (yes/no)")
 
-                    return
+                        return
+                    }
+
+                    var nicknameTemplateCheck = checkFieldNameTemplateValidity(fMsg.content, listOfFieldsForRegistration)
+
+                    if (nicknameTemplateCheck == false) {
+                        collector2.collected.delete(collector2.collected.lastKey())
+
+                        fMsg.channel.send("Something went wrong with processing that nickname template...try making sure it is valid and everything is spelt right, then send it again.")
+
+                        return
+                    } else if (nicknameTemplateCheck == true) {
+                        fMsg.channel.send("Done! Nickname template completed.")
+
+                        nicknameTemplateCompleted = true
+
+                        fMsg.channel.send("When a meber registers a new nation, should a channel be created for that nation? (yes/no)")
+
+                        return
+                    }
+
+                } else {
+
+                    if (fMsg.content == "done") {
+                        fMsg.channel.send("Done. Form completed.")
+
+                        fieldCollectionCompleted = true
+
+                        fMsg.channel.send("Ok, now we're getting down to the good stuff... Set up members' custom nicknames following the instructions below:")
+                        var embed1 = new Discord.MessageEmbed()
+                            .setColor("#009900")
+                            .setTitle("Custom nickname setup")
+                            .addField("Instructions:", "Send a message of how members' nicknames should change after registering below. To insert an answer from a field type '[fieldname]'. To insert the member's original username type '[username]'")
+                            .addField("Example:", "If I have a field called 'Nation name', I could send \"[username] | [Nation name]\" which would turn in to, for example, 'Mapgame Bot | My Epic Nation Name'.")
+                            .addField("Don't want to do this step?", "If so, simply send \"skip\"")
+                        fMsg.channel.send(embed1)
+
+                        return
+                    }
+
+                    if (fMsg.content.includes("username") || fMsg.content.includes("$") || fMsg.content.includes("#") || fMsg.content.includes("[") || fMsg.content.includes("]") || fMsg.content.includes("/") || fMsg.content.includes(".") || listOfFieldsForRegistration.includes(fMsg.content)) {
+                        collector2.collected.delete(collector2.collected.lastKey())
+
+                        fMsg.channel.send("Invalid field name. Make sure it doesn't include '$', '#', '[', ']', '/', '.', or 'username' and isn't already a field.")
+
+                        return
+                    }
+
+                    var fieldName = fMsg.content
+
+                    embedMessage.edit(embed.spliceFields(1, 1, { name: "Form:", value: embed.fields.find(f => f.name == "Form:").value.replace("None", "") + fieldName + ":\n" }))
+                    listOfFieldsForRegistration.push(fMsg.content)
                 }
-
-                if (fMsg.content.includes("username") || fMsg.content.includes("$") || fMsg.content.includes("#") || fMsg.content.includes("[") || fMsg.content.includes("]") || fMsg.content.includes("/") || fMsg.content.includes(".") || listOfFieldsForRegistration.includes(fMsg.content)) {
-                    collector2.collected.delete(collector2.collected.lastKey())
-
-                    fMsg.channel.send("Invalid field name. Make sure it doesn't include '$', '#', '[', ']', '/', '.', or 'username' and isn't already a field.")
-
-                    return
-                }
-
-                var fieldName = fMsg.content
-
-                embedMessage.edit(embed.spliceFields(1, 1, { name: "Form:", value: embed.fields.find(f => f.name == "Form:").value.replace("None", "") + fieldName + ":\n" }))
-                listOfFieldsForRegistration.push(fMsg.content)
             }
         }
     })
@@ -431,8 +448,20 @@ function initRegistrationQuestionSetup(cMsg, embed, embedMessage, collector, gui
         console.log(collector.collected)
         var welcomeChannelID = getChannelFromMention(collector.collected.array()[0].content).id
         var autoRoleRoleID = getUserFromMention(collector.collected.array()[1].content, true, client.guilds.cache.get(guildID)).id
-        var nicknameTemplate = collector2.collected.array()[collector2.collected.array().length - 2].content
-        var channelTemplate = collector2.collected.array()[collector2.collected.array().length - 1].content
+        switch (nationChannelBool) {
+            case true:
+                var nicknameTemplate = collector2.collected.array()[collector2.collected.array().length - 3].content
+                var channelTemplate = collector2.collected.array()[collector2.collected.array().length - 1].content
+                break;
+
+            case false:
+                var nicknameTemplate = collector2.collected.array()[collector2.collected.array().length - 2].content
+                var channelTemplate = null
+                break;
+
+            default:
+                break;
+        }
 
         var ref2 = db.ref(guildID + "/config")
         ref2.update({
@@ -441,7 +470,7 @@ function initRegistrationQuestionSetup(cMsg, embed, embedMessage, collector, gui
             autoRoleRoleID: autoRoleRoleID,
             listOfFieldsForRegistration: listOfFieldsForRegistration,
             nicknameTemplate: nicknameTemplate,
-            channelTemplate: channelTemplate
+            channelTemplate: channelTemplate.split(" ").join("-")
         })
     })
 }
