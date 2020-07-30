@@ -1,9 +1,14 @@
-function handleMainCanvasClick(canvas, event) {
+function handleMainCanvasClick(canvas, event, coloursWithCoordsJSON) {
     const rect = canvas.getBoundingClientRect()
     const x = Math.round(event.clientX - rect.left)
     const y = Math.round(event.clientY - rect.top)
-    alert("x: " + x + ", y: " + y)
-    alert(canvas.getContext("2d").getImageData(event.offsetX, event.offsetY, 1, 1).data)
+    var clickColourData = canvas.getContext("2d").getImageData(event.offsetX, event.offsetY, 1, 1).data
+
+    for (var i = 0; i < coloursWithCoordsJSON.main.length; i++) {
+        if (coloursWithCoordsJSON.main[i][1] == clickColourData) {
+            return coloursWithCoordsJSON.main[i][0]
+        }
+    }
 }
 
 var canvas
@@ -20,6 +25,6 @@ fetch("res/colours with coords.json").then(response => response.json()).then(col
     }
     img1.src = "res/edited map.png"
     canvas.addEventListener("click", function(e) {
-        handleMainCanvasClick(canvas, e)
+        alert(handleMainCanvasClick(canvas, e, coloursWithCoordsJSON))
     })
 })
