@@ -66,5 +66,5 @@ function constructMapCode(pixel, hexColour) {
 
 function changeAllInstancesInCurrentMapCode(oldString, newString) {
     var mapCodeTextInput = document.getElementById("map-code-text-input")
-    mapCodeTextInput.value = mapCodeTextInput.value.replace(oldString, newString)
+    mapCodeTextInput.value = mapCodeTextInput.value.split(oldString).join(newString)
 }
