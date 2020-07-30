@@ -3,7 +3,7 @@ function handleMainCanvasClick(canvas, event, coloursWithCoordsJSON) {
     const x = Math.round(event.clientX - rect.left)
     const y = Math.round(event.clientY - rect.top)
     var clickColourData = canvas.getContext("2d").getImageData(event.offsetX, event.offsetY, 1, 1).data
-    console.log(clickColourData)
+    console.log(Array.from(clickColourData))
 
     for (var i = 0; i < coloursWithCoordsJSON.main.length; i++) {
         if (coloursWithCoordsJSON.main[i][1] == Array.from(clickColourData)) {
