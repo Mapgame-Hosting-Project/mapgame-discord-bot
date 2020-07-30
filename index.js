@@ -111,7 +111,7 @@ function handleCommand(msg, command, args) {
                                 var embed = new Discord.MessageEmbed()
                                     .setColor("#009900")
                                     .setTitle("Registration information")
-                                    .addField("Instructions:", "Send a list of messages containing the different fields that will be on your registration form (field names can't contain $, #, [, ], /, or ., if one does, it will be ignored). Type done when you are done.")
+                                    .addField("Instructions:", "Send a list of messages containing the different fields that will be on your registration form (field names can't contain $, #, [, ], /, or ., if one does, it will be ignored. You cannot have two fields with the same name, either). Type done when you are done.")
                                     .addField("Form:", "None")
                                 cMsg.channel.send(embed).then(message => {
                                     initRegistrationQuestionSetup(cMsg, embed, message, collector, guildID)
