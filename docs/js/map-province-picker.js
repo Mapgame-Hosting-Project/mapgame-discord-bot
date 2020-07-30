@@ -14,7 +14,7 @@ function handleMainCanvasClick(canvas, event, coloursWithCoordsJSON) {
 }
 
 var canvas
-var mapClaimCode = ""
+var chosenHexColour = "#000000"
 
 fetch("res/colours with coords.json").then(response => response.json()).then(coloursWithCoordsJSON => {
     console.log(coloursWithCoordsJSON)
@@ -39,6 +39,10 @@ fetch("res/colours with coords.json").then(response => response.json()).then(col
         alert("Copied map claim code!")
         document.querySelector("#map-code-text-input").value += ","
     })
+    document.getElementById("colour-input").addEventListener("change", (event) => {
+        changeAllInstancesInCurrentMapCode(chosenHexColour, event.target.value)
+        chosenHexColour = event.target.value
+    }, false)
 })
 
 function handleProvinceClick(pixelToAddToCode) {
@@ -58,4 +62,9 @@ function handleProvinceClick(pixelToAddToCode) {
 
 function constructMapCode(pixel, hexColour) {
     return `${pixel[0]}.${pixel[1]}=${hexColour},`
+}
+
+function changeAllInstancesInCurrentMapCode(oldString, newString) {
+    var mapCodeTextInput = document.getElementById("map-code-text-input")
+    mapCodeTextInput.value = mapCodeTextInput.value.replace(oldString, newString)
 }
