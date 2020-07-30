@@ -14,6 +14,7 @@ function handleMainCanvasClick(canvas, event, coloursWithCoordsJSON) {
 }
 
 var canvas
+var mapClaimCode = ""
 
 fetch("res/colours with coords.json").then(response => response.json()).then(coloursWithCoordsJSON => {
     console.log(coloursWithCoordsJSON)
@@ -27,6 +28,27 @@ fetch("res/colours with coords.json").then(response => response.json()).then(col
     }
     img1.src = "res/edited map.png"
     canvas.addEventListener("click", function(e) {
-        alert(handleMainCanvasClick(canvas, e, coloursWithCoordsJSON))
+        var pixelToAddToCode = handleMainCanvasClick(canvas, e, coloursWithCoordsJSON)
+
+        handleProvinceClick(pixelToAddToCode)
     })
 })
+
+function handleProvinceClick(pixelToAddToCode) {
+    if (pixelToAddToCode == undefined) {
+        return
+    }
+
+    var mapClaimCode = constructMapCode(pixelToAddToCode, document.getElementById("colour-picker").value)
+    var mapCodeTextInput = document.getElementById("map-code-text-input")
+
+    if (mapCodeTextInput.value.contains(mapClaimCode)) {
+        mapCodeTextInput.value.replace(mapClaimCode, "")
+    } else {
+        mapCodeTextInput.value += mapClaimCode
+    }
+}
+
+function constructMapCode(pixel, hexColour) {
+    return `${pixel[0]}.${pixel[1]}=${hexColour},`
+}
