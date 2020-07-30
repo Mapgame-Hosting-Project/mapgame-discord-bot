@@ -34,7 +34,7 @@ def generateImageFileName():
     
 mapCodeList = parseMapCode(sys.argv[1])
 
-image = Image.open("mapImages/epic map.png").convert("RGBA")
+image = Image.open("mapImages/epic-map.png").convert("RGBA")
 
 for fill in mapCodeList:
     ImageDraw.floodfill(image, fill[0], fill[1])
