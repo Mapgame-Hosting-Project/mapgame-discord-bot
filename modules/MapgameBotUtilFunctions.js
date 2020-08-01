@@ -71,24 +71,32 @@ class MapgameBotUtilFunctions {
             }
         }
 
-        if (openSquareBracketIndexes.length != closeSquareBracketIndexes.length) return false
-        if (openSquareBracketIndexes.length == 0) return false
+        if (openSquareBracketIndexes.length != closeSquareBracketIndexes.length) return [null, false]
+        if (openSquareBracketIndexes.length == 0) return [null, false]
 
         if (checkWithUsername) {
             for (var i = 0; i < openSquareBracketIndexes.length; i++) {
                 var fieldName = template.substring(openSquareBracketIndexes[i] + 1, closeSquareBracketIndexes[i])
+                if (fieldName.endsWith(":")) {
+                    fieldName = fieldName.replace(/.$/, "")
+                    template = template.slice(0, closeSquareBracketIndexes[i] - 1) + template.slice(closeSquareBracketIndexes[i])
+                }
 
-                if (!listOfFields.includes(fieldName) && !fieldName == "username") return false
+                if (!listOfFields.includes(fieldName) && !fieldName == "username") return [null, false]
             }
         } else {
             for (var i = 0; i < openSquareBracketIndexes.length; i++) {
                 var fieldName = template.substring(openSquareBracketIndexes[i] + 1, closeSquareBracketIndexes[i])
+                if (fieldName.endsWith(":")) {
+                    fieldName = fieldName.replace(/.$/, "")
+                    template = template.slice(0, closeSquareBracketIndexes[i] - 1) + template.slice(closeSquareBracketIndexes[i])
+                }
 
-                if (!listOfFields.includes(fieldName)) return false
+                if (!listOfFields.includes(fieldName)) return [null, false]
             }
         }
 
-        return true
+        return [template, true]
     }
 }
 

@@ -23,13 +23,21 @@ class RegisterNation {
                     var filter = m => m.member.id === msg.member.id
                     var collector = msg.channel.createMessageCollector(filter)
 
-                    msg.channel.send("Fill out the following details about your nation.")
+                    msg.channel.send("Fill out the following details about your nation. Send \"cancel\" at any time to cancel the registration process.")
 
                     msg.channel.send(listOfFieldsForRegistration[0] + ":")
 
                     collector.on("collect", cMsg => {
                         console.log(collector.collected.size)
                         console.log(listOfFieldsForRegistration.length)
+
+                        if (cMsg.content.toLowerCase() == "cancel") {
+                            collector.stop()
+
+                            cMsg.channel.send("Registration cancelled.")
+
+                            return
+                        }
 
                         if (collector.collected.size == listOfFieldsForRegistration.length) {
                             cMsg.channel.send("Now to do your initial map claim. Follow the instructions below.")
@@ -54,7 +62,7 @@ class RegisterNation {
                         }
 
                         if (collector.collected.size == listOfFieldsForRegistration.length + 2) {
-                            if (cMsg.content == "yes" || cMsg.content == "y") {
+                            if (cMsg.content.toLowerCase() == "yes" || cMsg.content.toLowerCase() == "y") {
                                 collector.stop()
 
                                 return
@@ -72,6 +80,10 @@ class RegisterNation {
                     })
 
                     collector.on("end", collected => {
+                        if (collected.array()[collected.array().length - 1].content.toLowerCase() == "cancel") {
+                            return
+                        }
+
                         try {
                             var answers = []
                             collected.array().slice(0, listOfFieldsForRegistration.length).forEach(message => {

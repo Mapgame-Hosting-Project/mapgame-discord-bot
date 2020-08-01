@@ -13,11 +13,19 @@ class ServerInitSetup {
         var filter1 = m => m.member.id === msg.member.id
         var collector1 = msg.channel.createMessageCollector(filter1)
 
-        msg.channel.send("I'm going to ask you a couple questions to help setup your server with the bot.")
+        msg.channel.send("I'm going to ask you a couple questions to help setup your server with the bot. Send \"cancel\" at any time to cancel the setup process.")
         msg.channel.send("What channel should I welcome new members in? (make sure to have the channel name mentioned, highlighted blue)")
 
         collector1.on("collect", cMsg => {
             console.log(collector1.collected.size)
+
+            if (cMsg.content.toLowerCase() == "cancel") {
+                collector1.stop()
+
+                cMsg.channel.send("Setup cancelled.")
+
+                return
+            }
 
             switch (collector1.collected.size) {
                 case 1:
@@ -28,7 +36,14 @@ class ServerInitSetup {
                         break;
                     }
 
-                    cMsg.channel.send("What role should I give members when they join? Make sure to mention the role. To skip this step, send a message with 'skip'.")
+                    if (!this.client.guilds.cache.get(this.guildID).members.cache.get(this.client.user.id).permissionsIn(this.mapgameBotUtilFunctions.getChannelFromMention(cMsg.content)).has("VIEW_CHANNEL")) {
+                        cMsg.channel.send("It seems I can't find that channel...make sure I have the correct permissions to view that channel.")
+                        collector1.collected.delete(collector1.collected.lastKey())
+                        msg.channel.send("What channel should I welcome new members in? (make sure to have the channel name mentioned, highlighted blue)")
+                        break;
+                    }
+
+                    cMsg.channel.send("What role should I give members when they join? Make sure to mention the role. To skip this step, send a message with \"skip\".")
                     break;
 
                 case 2:
@@ -48,6 +63,10 @@ class ServerInitSetup {
         })
 
         collector1.on("end", collector1Collected => {
+            if (collector1Collected.array()[collector1Collected.array().length - 1].content == "cancel") {
+                return
+            }
+
             msg.channel.send("What information about a member's nation will they have to provide when registering?")
             var embed1 = new this.Discord.MessageEmbed()
                 .setColor("#009900")
@@ -67,19 +86,20 @@ class ServerInitSetup {
             collector2.on("collect", cMsg => {
                 console.log(collector2.collected.size)
 
+                if (cMsg.content.toLowerCase() == "cancel") {
+                    collector2.stop()
+
+                    cMsg.channel.send("Setup cancelled.")
+
+                    return
+                }
+
                 switch (collector2.collected.size) {
                     case 1:
-                        if (cMsg.content == "done") {
+                        if (cMsg.content.toLowerCase() == "done") {
                             cMsg.channel.send("Done. Form completed.")
 
-                            cMsg.channel.send("Ok, now we're getting down to the good stuff... Set up members' custom nicknames following the instructions below:")
-                            var embed2 = new this.Discord.MessageEmbed()
-                                .setColor("#009900")
-                                .setTitle("Custom nickname setup")
-                                .addField("Instructions:", "Send a message of how members' nicknames should change after registering below. To insert an answer from a field type '[fieldname]'. To insert the member's original username type '[username]'")
-                                .addField("Example:", "If I have a field called 'Nation name', I could send \"[username] | [Nation name]\" which would turn in to, for example, 'Mapgame Bot | My Epic Nation Name'.")
-                                .addField("Don't want to do this step?", "If so, simply send \"skip\"")
-                            cMsg.channel.send(embed2)
+                            cMsg.channel.send("What channel should I send nation applications in for moderator review? If you don't have one, please create one before answering this question. (make sure to have the channel name mentioned, highlighted blue)")
 
                             return
                         }
@@ -95,11 +115,36 @@ class ServerInitSetup {
                         embedMessage.edit(embed1.spliceFields(1, 1, { name: "Form:", value: embed1.fields.find(f => f.name == "Form:").value.replace("None", "") + cMsg.content + ":\n" }))
                         listOfFieldsForRegistration.push(cMsg.content)
                         collector2.collected.delete(collector2.collected.lastKey())
-
                         break;
 
                     case 2:
-                        if (cMsg.content == "skip") {
+                        if (this.mapgameBotUtilFunctions.getChannelFromMention(cMsg.content) == "invalid mention") {
+                            cMsg.channel.send("Invalid channel.")
+                            collector2.collected.delete(collector2.collected.lastKey())
+                            cMsg.channel.send("What channel should I send nation applications in for moderator review? (make sure to have the channel name mentioned, highlighted blue)")
+                            break;
+                        }
+
+                        if (!this.client.guilds.cache.get(this.guildID).members.cache.get(this.client.user.id).permissionsIn(this.mapgameBotUtilFunctions.getChannelFromMention(cMsg.content)).has("VIEW_CHANNEL")) {
+                            cMsg.channel.send("It seems I can't find that channel...make sure I have the correct permissions to view that channel.")
+                            collector2.collected.delete(collector2.collected.lastKey())
+                            cMsg.channel.send("What channel should I send nation applications in for moderator review? (make sure to have the channel name mentioned, highlighted blue)")
+                            break;
+                        }
+
+                        cMsg.channel.send("Ok, now we're getting down to the good stuff... Set up members' custom nicknames following the instructions below:")
+                        var embed2 = new this.Discord.MessageEmbed()
+                            .setColor("#009900")
+                            .setTitle("Custom nickname setup")
+                            .addField("Instructions:", "Send a message of how members' nicknames should change after registering below. To insert an answer from a field type '[fieldname]'. To insert the member's original username type '[username]'")
+                            .addField("Example:", "If I have a field called 'Nation name', I could send \"[username] | [Nation name]\" which would turn in to, for example, 'Mapgame Bot | My Epic Nation Name'.")
+                            .addField("Don't want to do this step?", "If so, simply send \"skip\"")
+                        cMsg.channel.send(embed2)
+
+                        break;
+
+                    case 3:
+                        if (cMsg.content.toLowerCase() == "skip") {
                             cMsg.channel.send("Done! Nickname template skipped.")
                             cMsg.channel.send("When a member registers a new nation, should a channel be created for that nation? (yes/no)")
 
@@ -108,23 +153,24 @@ class ServerInitSetup {
 
                         var nicknameTemplateCheck = this.mapgameBotUtilFunctions.checkFieldNameTemplateValidity(cMsg.content, listOfFieldsForRegistration)
 
-                        if (nicknameTemplateCheck == false) {
+                        if (nicknameTemplateCheck[1] == false) {
                             collector2.collected.delete(collector2.collected.lastKey())
 
                             cMsg.channel.send("Something went wrong with processing that nickname template...try making sure it is valid and everything is spelt right, then send it again.")
 
                             return
-                        } else if (nicknameTemplateCheck == true) {
+                        } else if (nicknameTemplateCheck[1] == true) {
+                            collector2.collected.get(collector2.collected.lastKey()).content = nicknameTemplateCheck[0]
+
                             cMsg.channel.send("Done! Nickname template completed.")
                             cMsg.channel.send("When a member registers a new nation, should a channel be created for that nation? (yes/no)")
 
                             return
                         }
-
                         break;
 
-                    case 3:
-                        if (cMsg.content == "yes") {
+                    case 4:
+                        if (cMsg.content.toLowerCase() == "yes") {
                             nationChannelBool = true
 
                             cMsg.channel.send("Ok, follow the instructions below to set it up.")
@@ -136,7 +182,7 @@ class ServerInitSetup {
                             cMsg.channel.send(embed2)
 
                             return
-                        } else if (cMsg.content == "no") {
+                        } else if (cMsg.content.toLowerCase() == "no") {
                             nationChannelBool = false
 
                             cMsg.channel.send("Done! Channel template skipped.")
@@ -153,8 +199,8 @@ class ServerInitSetup {
                             return
                         }
 
-                    case 4:
-                        if (cMsg.content == "skip") {
+                    case 5:
+                        if (cMsg.content.toLowerCase() == "skip") {
                             nationChannelBool = false
 
                             cMsg.channel.send("Done! Channel template skipped.")
@@ -165,16 +211,29 @@ class ServerInitSetup {
                             return
                         }
 
-                        var channelTemplateCheck = this.mapgameBotUtilFunctions.checkFieldNameTemplateValidity(cMsg.content, listOfFieldsForRegistration, false)
+                        var channelTemplateTemp = cMsg.content
+                        if (channelTemplateTemp.startsWith("#")) {
+                            channelTemplateTemp = channelTemplateTemp.slice(1)
+                        }
 
-                        if (channelTemplateCheck == false) {
+                        console.log(channelTemplateTemp)
+
+                        var channelTemplateCheck = this.mapgameBotUtilFunctions.checkFieldNameTemplateValidity(channelTemplateTemp, listOfFieldsForRegistration, false)
+                        channelTemplateTemp = channelTemplateCheck[0]
+
+                        console.log(channelTemplateCheck)
+
+                        if (channelTemplateCheck[1] == false) {
                             collector2.collected.delete(collector2.collected.lastKey())
 
                             cMsg.channel.send("Something went wrong with processing that channel template...try making sure it is valid and everything is spelt right, then send it again.")
 
                             return
 
-                        } else if (channelTemplateCheck == true) {
+                        } else
+                        if (channelTemplateCheck[1] == true) {
+                            collector2.collected.get(collector2.collected.lastKey()).content = channelTemplateTemp
+
                             cMsg.channel.send("Done! Channel template completed.")
                             cMsg.channel.send("What is the name of the channel category I should add new members' nations' channels to?")
 
@@ -182,11 +241,19 @@ class ServerInitSetup {
                         }
                         break;
 
-                    case 5:
+                    case 6:
+                        if (!this.client.guilds.cache.get(this.guildID).members.cache.get(this.client.user.id).permissionsIn(this.mapgameBotUtilFunctions.getChannelFromMention(cMsg.content)).has("VIEW_CHANNEL")) {
+                            cMsg.channel.send("It seems I can't find that channel...make sure I have the correct permissions to view that channel.")
+                            collector2.collected.delete(collector2.collected.lastKey())
+                            cMsg.channel.send("What channel should I send nation applications in for moderator review? (make sure to have the channel name mentioned, highlighted blue)")
+                            break;
+                        }
+
                         collector2.stop()
 
                         cMsg.channel.send("Done! Channel template category chosen.")
                         cMsg.channel.send("Your server is now setup. Type " + this.config.prefix + "help to see a list of commands you can use.")
+
                         break;
 
                     default:
@@ -197,15 +264,19 @@ class ServerInitSetup {
             collector2.on("end", collector2Collected => {
                 // FYI: collector1Collected is within this scope
 
+                if (collector2Collected.array()[collector2Collected.array().length - 1].content.toLowerCase() == "cancel") {
+                    return
+                }
+
                 var welcomeChannelID = this.mapgameBotUtilFunctions.getChannelFromMention(collector1Collected.array()[0].content).id
                 var autoRoleRoleID = this.mapgameBotUtilFunctions.getUserFromMention(collector1Collected.array()[1].content, true, this.client.guilds.cache.get(this.guildID)).id
-                var nicknameTemplate = collector2Collected.array()[1].content
+                var nicknameTemplate = collector2Collected.array()[2].content
                 var channelTemplate
                 var channelCategory
                 switch (nationChannelBool) {
                     case true:
-                        channelTemplate = collector2Collected.array()[3].content
-                        channelCategory = collector2Collected.array()[4].content
+                        channelTemplate = collector2Collected.array()[4].content
+                        channelCategory = collector2Collected.array()[5].content
                         break;
 
                     case false:
@@ -218,6 +289,9 @@ class ServerInitSetup {
                         channelCategory = "skip"
                         break;
                 }
+                var channelToSendNationApplicationsToID = this.mapgameBotUtilFunctions.getChannelFromMention(collector2Collected.array()[1].content).id
+                this.client.guilds.cache.get(this.guildID).channels.cache.get(channelToSendNationApplicationsToID).createOverwrite(this.client.guilds.cache.get(this.guildID).roles.everyone, { SEND_MESSAGES: false })
+                this.client.guilds.cache.get(this.guildID).channels.cache.get(channelToSendNationApplicationsToID).createOverwrite(this.client.user, { SEND_MESSAGES: true })
 
                 var ref2 = this.db.ref(this.guildID + "/config")
                 ref2.update({
@@ -227,7 +301,8 @@ class ServerInitSetup {
                     listOfFieldsForRegistration: listOfFieldsForRegistration,
                     nicknameTemplate: nicknameTemplate,
                     channelTemplate: channelTemplate.split(" ").join("-"),
-                    channelCategory: channelCategory
+                    channelCategory: channelCategory.toLowerCase(),
+                    channelToSendNationApplicationsToID: channelToSendNationApplicationsToID
                 })
             })
         })
