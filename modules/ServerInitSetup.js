@@ -178,7 +178,7 @@ class ServerInitSetup {
                                 .setTitle("Custom nation channel setup")
                                 .setColor("#009900")
                                 .addField("Instructions:", "Send a message of what the channel will be called. Use the same method as with nicknames to add answers from the form, surrounding the field name with square brackets. All spaces will be turned to dashes ('-') when the channel is created.")
-                                .addField("Don't want to do this step?", "I literally just asked you...fine...send \"skip\" and you'll be on your way.")
+                                .addField("Don't want to do this step?", "I literally just asked you- fine. Send \"skip\" and you'll be on your way.")
                             cMsg.channel.send(embed2)
 
                             return
@@ -242,7 +242,7 @@ class ServerInitSetup {
                         break;
 
                     case 6:
-                        if (!this.client.guilds.cache.get(this.guildID).members.cache.get(this.client.user.id).permissionsIn(this.mapgameBotUtilFunctions.getChannelFromMention(cMsg.content)).has("VIEW_CHANNEL")) {
+                        if (!this.client.guilds.cache.get(this.guildID).members.cache.get(this.client.user.id).permissionsIn(this.client.guilds.cache.get(this.guildID).channels.cache.find(channel => channel.name.toLowerCase() == cMsg.content.toLowerCase())).has("VIEW_CHANNEL")) {
                             cMsg.channel.send("It seems I can't find that channel...make sure I have the correct permissions to view that channel.")
                             collector2.collected.delete(collector2.collected.lastKey())
                             cMsg.channel.send("What channel should I send nation applications in for moderator review? (make sure to have the channel name mentioned, highlighted blue)")

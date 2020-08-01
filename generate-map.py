@@ -13,14 +13,18 @@ def hexToRGBList(hexCode):
 def parseMapCode(code):
     # code = "2670.424=#009900,2679.417=#009900"
 
-    finalCodeList = []
-    codeList1 = code.split(",")
-    codeList2 = []
-    for code in codeList1:
-        codeList2.append(code.split("="))
-    codeList3 = []
-    for code in codeList2:
-        codeList3.append([(int(code[0].split(".")[0]), int(code[0].split(".")[1])), hexToRGBList(code[1])])
+    try:
+        finalCodeList = []
+        codeList1 = code.split(",")
+        codeList2 = []
+        for code in codeList1:
+            codeList2.append(code.split("="))
+        codeList3 = []
+        for code in codeList2:
+            codeList3.append([(int(code[0].split(".")[0]), int(code[0].split(".")[1])), hexToRGBList(code[1])])
+    except:
+        print("error parsing map code")
+        sys.exit()
 
     return codeList3
 

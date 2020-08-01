@@ -2,10 +2,10 @@ class RegisterNation {
     constructor(db, guildID, mapgameBotUtilFunctions, config) {
         this.Discord = require("discord.js")
 
+        this.mapgameBotUtilFunctions = mapgameBotUtilFunctions
         this.config = config
         this.db = db
         this.guildID = guildID
-        this.mapgameBotUtilFunctions = mapgameBotUtilFunctions
     }
 
     start(msg) {
@@ -52,9 +52,17 @@ class RegisterNation {
                         }
 
                         if (collector.collected.size == listOfFieldsForRegistration.length + 1) {
-                            cMsg.channel.send("Generating map claim preview...")
+                            cMsg.channel.send("Generating map claim preview... (this may take a while)")
 
                             this.mapgameBotUtilFunctions.generateMapFromMapCode(cMsg.content).then(mapPath => {
+                                if (mapPath == "error parsing map code") {
+                                    collector.collected.delete(collector.collected.lastKey())
+
+                                    cMsg.channel.send("Invalid map code. Send another map claim code from the website (https://phyrik.github.io/mapgame-discord-bot/map-province-picker.html).")
+
+                                    return
+                                }
+
                                 cMsg.channel.send("Is this claim ok? (yes/no)", { files: [mapPath] })
                             })
 
@@ -107,10 +115,15 @@ class RegisterNation {
                             var ref = this.db.ref(this.guildID + "/nationApplications/" + msg.member.id)
                             ref.update(formJSONObject)
 
-                            collected.array()[0].channel.send("Done! Your registration form is now submitted. To cancel it, type" + this.config.prefix + "cancel-registration.")
+                            RegisterNation.sendApplicationToModReviewChannel(this.guildID, ref, this.db, this.mapgameBotUtilFunctions, listOfFieldsForRegistration)
+
+                            collected.array()[0].channel.send("Done! Your registration form is now submitted. To cancel it, type \"" + this.config.prefix + "cancel-registration\".")
                         } catch (e) {
                             console.log(e)
-                            collected.array()[0].channel.send("Whoops! There was something wrong with submitting your form.")
+                            collected.array()[0].channel.send("Whoops! There was something wrong with submitting your form. Type \"" + this.config.prefix + "register\" to try again.")
+
+                            var ref = this.db.ref(this.guildID + "/nationApplications/" + msg.member.id)
+                            ref.remove()
                         }
                     })
                 })
@@ -118,6 +131,44 @@ class RegisterNation {
                 msg.channel.send("This server hasn't been set up with us yet! Contact an admin and get them to run the command \"" + config.prefix + "init\".")
                 return
             }
+        })
+    }
+
+    static sendApplicationToModReviewChannel(guildID, applicationDbRef, db, mapgameBotUtilFunctions, listOfFieldsForRegistration) {
+        var applicationEmbed
+
+        this.constructApplicationReviewEmbed(applicationDbRef, mapgameBotUtilFunctions, listOfFieldsForRegistration).then(embed => {
+            applicationEmbed = embed
+
+            var ref = db.ref(guildID + "/config/channelToSendNationApplicationsToID")
+            ref.once("value", (snapshot) => {
+                var channelToSendApplicationEmbedTo = mapgameBotUtilFunctions.getChannelFromMention("<#" + snapshot.val() + ">")
+
+                channelToSendApplicationEmbedTo.send(applicationEmbed)
+            })
+        })
+    }
+
+    static async constructApplicationReviewEmbed(applicationDbRef, mapgameBotUtilFunctions, listOfFieldsForRegistration) {
+        var Discord = require("discord.js")
+
+        var embed = new Discord.MessageEmbed()
+            .setTitle("Nation application from " + mapgameBotUtilFunctions.getUserFromMention("<@" + applicationDbRef.key + ">").username)
+
+        return new Promise((resolve, reject) => {
+            applicationDbRef.once("value", (snapshot) => {
+                listOfFieldsForRegistration.forEach(fieldName => {
+                    embed.addField(fieldName, snapshot.val().fields[fieldName])
+                });
+
+                mapgameBotUtilFunctions.generateMapFromMapCode(snapshot.val().mapClaimCode).then(mapPath => {
+                    embed.attachFiles([mapPath])
+
+                    embed.addField("Map claim", "See attached image")
+
+                    resolve(embed)
+                })
+            })
         })
     }
 }
