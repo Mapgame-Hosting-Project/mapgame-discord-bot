@@ -70,8 +70,23 @@ function handleCommand(msg, command, args) {
             // TODO: help message
             break;
 
-        case "reinit":
-            // TODO: this
+        case "uninit":
+            if (!msg.member.hasPermission("ADMINISTRATOR")) {
+                msg.channel.send("You do not have the correct permissions to use this command. Ask an admin to help you out.")
+                break;
+            }
+
+            var ref = db.ref(guildID + "/config/setupComplete")
+            ref.once("value", (snapshot) => {
+                if (snapshot.val() == "yes") {
+                    ref2 = db.ref(guildID + "/config")
+                    ref2.remove().then(() => {
+                        msg.channel.send("Done! You can now re-initialise the server with \"" + config.prefix + "init\".")
+                    })
+                } else {
+                    msg.channel.send("This server hasn't been initialised yet! Type \"" + config.prefix + "init\" to link it with the bot.")
+                }
+            })
             break;
 
         case "init":
@@ -83,7 +98,7 @@ function handleCommand(msg, command, args) {
             var ref = db.ref(guildID + "/config/setupComplete")
             ref.once("value", (snapshot) => {
                 if (snapshot.val() == "yes") {
-                    msg.channel.send("You've already initialised this server! To reinitialise it, type \"" + config.prefix + "reinit\"")
+                    msg.channel.send("You've already initialised this server! To reinitialise it, type \"" + config.prefix + "uninit\"")
                     return
                 } else {
                     var serverInitSetup = new ServerInitSetup(guildID, new MapgameBotUtilFunctions(client), client, db, config)
