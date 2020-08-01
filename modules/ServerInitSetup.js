@@ -175,13 +175,18 @@ class ServerInitSetup {
                             return
 
                         } else if (channelTemplateCheck == true) {
-                            collector2.stop()
-
                             cMsg.channel.send("Done! Channel template completed.")
-                            cMsg.channel.send("Your server is now setup. Type " + this.config.prefix + "help to see a list of commands you can use.")
+                            cMsg.channel.send("What is the name of the channel category I should add new members' nations' channels to?")
 
                             return
                         }
+                        break;
+
+                    case 5:
+                        collector2.stop()
+
+                        cMsg.channel.send("Done! Channel template category chosen.")
+                        cMsg.channel.send("Your server is now setup. Type " + this.config.prefix + "help to see a list of commands you can use.")
                         break;
 
                     default:
@@ -192,24 +197,25 @@ class ServerInitSetup {
             collector2.on("end", collector2Collected => {
                 // FYI: collector1Collected is within this scope
 
-                console.log("Collector 1 collected:\n" + collector1Collected.array())
-                console.log("Collector 2 collected:\n" + collector2Collected.array())
-
                 var welcomeChannelID = this.mapgameBotUtilFunctions.getChannelFromMention(collector1Collected.array()[0].content).id
                 var autoRoleRoleID = this.mapgameBotUtilFunctions.getUserFromMention(collector1Collected.array()[1].content, true, this.client.guilds.cache.get(this.guildID)).id
                 var nicknameTemplate = collector2Collected.array()[1].content
                 var channelTemplate
+                var channelCategory
                 switch (nationChannelBool) {
                     case true:
                         channelTemplate = collector2Collected.array()[3].content
+                        channelCategory = collector2Collected.array()[4].content
                         break;
 
                     case false:
                         channelTemplate = "skip"
+                        channelCategory = "skip"
                         break;
 
                     default:
                         channelTemplate = "skip"
+                        channelCategory = "skip"
                         break;
                 }
 
@@ -220,7 +226,8 @@ class ServerInitSetup {
                     autoRoleRoleID: autoRoleRoleID,
                     listOfFieldsForRegistration: listOfFieldsForRegistration,
                     nicknameTemplate: nicknameTemplate,
-                    channelTemplate: channelTemplate.split(" ").join("-")
+                    channelTemplate: channelTemplate.split(" ").join("-"),
+                    channelCategory: channelCategory
                 })
             })
         })
