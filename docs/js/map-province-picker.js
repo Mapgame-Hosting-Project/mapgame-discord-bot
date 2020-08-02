@@ -31,7 +31,7 @@ fetch("res/colours with coords.json").then(response => response.json()).then(col
         var pixelToAddToCode, colourList = handleMainCanvasClick(canvas, e, coloursWithCoordsJSON)
 
         if (colourList[0] != 0 && colourList[1] != 0 && colourList[2] != 0) {
-            recolorImage(img1, colourList[0], colourList[1], colourList[2], 0, 0, 0)
+            recolorImage(img1, colourList[0], colourList[1], colourList[2], 0, 0, 0, canvas)
         }
 
         handleProvinceClick(pixelToAddToCode)
@@ -73,9 +73,8 @@ function changeAllInstancesInCurrentMapCode(oldString, newString) {
     mapCodeTextInput.value = mapCodeTextInput.value.split(oldString).join(newString)
 }
 
-function recolorImage(img, oldRed, oldGreen, oldBlue, newRed, newGreen, newBlue) {
+function recolorImage(img, oldRed, oldGreen, oldBlue, newRed, newGreen, newBlue, c) {
 
-    var c = canvas
     var ctx = c.getContext("2d");
     var w = img.width;
     var h = img.height;
