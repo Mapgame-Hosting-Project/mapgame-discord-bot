@@ -82,7 +82,7 @@ class MapgameBotUtilFunctions {
                     template = template.slice(0, closeSquareBracketIndexes[i] - 1) + template.slice(closeSquareBracketIndexes[i])
                 }
 
-                if (!listOfFields.includes(fieldName) && !fieldName == "username") return [null, false]
+                if ((!(listOfFields.includes(fieldName))) && (!(fieldName == "username"))) return [null, false]
             }
         } else {
             for (var i = 0; i < openSquareBracketIndexes.length; i++) {
@@ -92,11 +92,28 @@ class MapgameBotUtilFunctions {
                     template = template.slice(0, closeSquareBracketIndexes[i] - 1) + template.slice(closeSquareBracketIndexes[i])
                 }
 
-                if (!listOfFields.includes(fieldName)) return [null, false]
+                if (!(listOfFields.includes(fieldName))) return [null, false]
             }
         }
 
         return [template, true]
+    }
+
+    replaceTemplateWithFieldValues(template, fields, fieldsWithValues, checkWithUsername = true) {
+        var templateCheck = this.checkFieldNameTemplateValidity(template, fields, checkWithUsername)
+        if (!templateCheck[1]) {
+            return false
+        }
+        template = templateCheck[0]
+        var newTemplate = template
+
+        for (var i = 0; i < fields.length; i++) {
+            var fieldName = fields[i]
+            var fieldAnswer = fieldsWithValues[fieldName]
+            newTemplate = newTemplate.replace("[" + fieldName + "]", fieldAnswer)
+        }
+
+        return newTemplate
     }
 }
 

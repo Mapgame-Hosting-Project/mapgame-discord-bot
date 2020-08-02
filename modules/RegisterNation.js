@@ -149,15 +149,31 @@ class RegisterNation {
                     var roleNeededID = snapshot1.val()
 
                     channelToSendApplicationEmbedTo.send(applicationEmbed).then(message => {
-                        applicationDbRef.child("status").on("value", (snapshot) => {
-                            message.edit(applicationEmbed.spliceFields(listOfFieldsForRegistration.length, 1, { name: "Status:", value: snapshot.val() }))
+                        applicationDbRef.child("status").on("value", (snapshot2) => {
+                            message.edit(applicationEmbed.spliceFields(listOfFieldsForRegistration.length, 1, { name: "Status:", value: snapshot2.val() }))
 
                             var client = mapgameBotUtilFunctions.client
                             var guildName = client.guilds.cache.find(guild => guild.id == guildID).name
 
-                            switch (snapshot.val()) {
+                            switch (snapshot2.val()) {
                                 case "accepted":
                                     client.users.cache.find(user => user.id == applicationDbRef.key).send("Your nation application for the server \"" + guildName + "\" has been accepted!")
+
+                                    var ref3 = db.ref(guildID + "/config")
+                                    ref3.once("value", (snapshot3) => {
+                                        applicationDbRef.once("value", (snapshot4) => {
+                                            if (snapshot3.val().nicknameTemplate != "skip") {
+                                                message.guild.members.cache.find(member => member.id == applicationDbRef.key).setNickname(mapgameBotUtilFunctions.replaceTemplateWithFieldValues(snapshot3.val().nicknameTemplate, listOfFieldsForRegistration, snapshot4.val().fields))
+                                            }
+
+                                            if (snapshot3.val().channelTemplate != "skip") {
+                                                var channelName = mapgameBotUtilFunctions.replaceTemplateWithFieldValues(snapshot3.val().channelTemplate, listOfFieldsForRegistration, snapshot4.val().fields)
+                                                message.guild.channels.create(channelName).then(channel => {
+                                                    channel.setParent(message.guild.channels.cache.find(channel => channel.name.toLowerCase() == snapshot3.val().channelCategory).id)
+                                                })
+                                            }
+                                        })
+                                    })
                                     break;
 
                                 case "rejected":
@@ -222,6 +238,8 @@ class RegisterNation {
                     embed.attachFiles([mapPath])
 
                     embed.addField("Map claim", "See attached image")
+
+                    embed.setFooter("If you are a mod, use the reactions below to accept or reject this application.")
 
                     resolve(embed)
                 })

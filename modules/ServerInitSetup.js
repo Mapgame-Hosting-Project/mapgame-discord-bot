@@ -138,7 +138,7 @@ class ServerInitSetup {
                     case 3:
                         if (this.mapgameBotUtilFunctions.getUserFromMention(cMsg.content, true, this.client.guilds.cache.get(this.guildID)) == "invalid mention") {
                             cMsg.channel.send("Invalid role.")
-                            collector1.collected.delete(collector1.collected.lastKey())
+                            collector2.collected.delete(collector2.collected.lastKey())
                             msg.channel.send("What role should moderators have to have to be able to accept or reject nation applications? Make sure to mention the role.")
                             break;
                         }
@@ -162,6 +162,7 @@ class ServerInitSetup {
                         }
 
                         var nicknameTemplateCheck = this.mapgameBotUtilFunctions.checkFieldNameTemplateValidity(cMsg.content, listOfFieldsForRegistration)
+                        console.log(nicknameTemplateCheck)
 
                         if (nicknameTemplateCheck[1] == false) {
                             collector2.collected.delete(collector2.collected.lastKey())
@@ -311,7 +312,7 @@ class ServerInitSetup {
                     autoRoleRoleID: autoRoleRoleID,
                     listOfFieldsForRegistration: listOfFieldsForRegistration,
                     nicknameTemplate: nicknameTemplate,
-                    channelTemplate: channelTemplate.split(" ").join("-"),
+                    channelTemplate: channelTemplate,
                     channelCategory: channelCategory.toLowerCase(),
                     channelToSendNationApplicationsToID: channelToSendNationApplicationsToID,
                     roleNeededToProcessNationApplicationsID: roleNeededToProcessNationApplicationsID

@@ -28,7 +28,7 @@ client.on("guildCreate", guild => {
         }
     })
 
-    defaultChannel.send("Hello! To start linking your server with the bot, type \"" + config.prefix + "help\".")
+    defaultChannel.send("Hello! To start linking your server with the bot, type \"" + config.prefix + "help\". Also, make sure to have my role (which should be 'Mapgame Bot') at the top of your server's role list in your server's settings or else I won't work!")
 })
 
 client.on("guildMemberAdd", member => {
