@@ -132,7 +132,7 @@ function handleCommand(msg, command, args) {
                     msg.channel.send("No nations found.")
                     return
                 } else {
-                    // at least 1 country found
+                    // at least 1 nation found
                 }
             })
 
