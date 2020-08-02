@@ -8,7 +8,7 @@ function handleMainCanvasClick(canvas, event, coloursWithCoordsJSON) {
     for (var i = 0; i < coloursWithCoordsJSON.main.length; i++) {
         if (coloursWithCoordsJSON.main[i][1][0] == clickColourData[0] && coloursWithCoordsJSON.main[i][1][1] == clickColourData[1] && coloursWithCoordsJSON.main[i][1][2] == clickColourData[2] && coloursWithCoordsJSON.main[i][1][3] == clickColourData[3]) {
             console.log(coloursWithCoordsJSON.main[i][0])
-            return coloursWithCoordsJSON.main[i][0], clickColourData
+            return [coloursWithCoordsJSON.main[i][0], clickColourData]
         }
     }
 }
@@ -28,10 +28,11 @@ fetch("res/colours with coords.json").then(response => response.json()).then(col
     }
     img1.src = "res/edited map.png"
     canvas.addEventListener("click", function(e) {
-        var pixelToAddToCode, colourList = handleMainCanvasClick(canvas, e, coloursWithCoordsJSON)
+        var stuff = handleMainCanvasClick(canvas, e, coloursWithCoordsJSON)
+        var colourList = stuff[1]
 
-        console.log(pixelToAddToCode)
-        handleProvinceClick(pixelToAddToCode)
+        console.log(pixelToAddToCode[0])
+        handleProvinceClick(pixelToAddToCode[0])
 
         if (colourList[0] != 0 && colourList[1] != 0 && colourList[2] != 0) {
             recolorImage(img1, colourList[0], colourList[1], colourList[2], 0, 0, 0, canvas)
