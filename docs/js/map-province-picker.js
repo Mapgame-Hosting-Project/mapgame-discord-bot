@@ -75,7 +75,7 @@ function changeAllInstancesInCurrentMapCode(oldString, newString) {
 
 function recolorImage(img, oldRed, oldGreen, oldBlue, newRed, newGreen, newBlue) {
 
-    var c = document.createElement('canvas');
+    var c = canvas
     var ctx = c.getContext("2d");
     var w = img.width;
     var h = img.height;
