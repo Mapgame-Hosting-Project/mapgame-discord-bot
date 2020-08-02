@@ -144,7 +144,62 @@ class RegisterNation {
             ref.once("value", (snapshot) => {
                 var channelToSendApplicationEmbedTo = mapgameBotUtilFunctions.getChannelFromMention("<#" + snapshot.val() + ">")
 
-                channelToSendApplicationEmbedTo.send(applicationEmbed)
+                var ref2 = db.ref(guildID + "/config/roleNeededToProcessNationApplicationsID")
+                ref2.once("value", (snapshot1) => {
+                    var roleNeededID = snapshot1.val()
+
+                    channelToSendApplicationEmbedTo.send(applicationEmbed).then(message => {
+                        applicationDbRef.child("status").on("value", (snapshot) => {
+                            message.edit(applicationEmbed.spliceFields(listOfFieldsForRegistration.length, 1, { name: "Status:", value: snapshot.val() }))
+
+                            var client = mapgameBotUtilFunctions.client
+                            var guildName = client.guilds.cache.find(guild => guild.id == guildID).name
+
+                            switch (snapshot.val()) {
+                                case "accepted":
+                                    client.users.cache.find(user => user.id == applicationDbRef.key).send("Your nation application for the server \"" + guildName + "\" has been accepted!")
+                                    break;
+
+                                case "rejected":
+                                    client.users.cache.find(user => user.id == applicationDbRef.key).send("Your nation application for the server \"" + guildName + "\" has been rejected.")
+                                    break;
+
+                                default:
+                                    break;
+                            }
+                        })
+
+                        message.react("✅")
+                        message.react("❎")
+
+                        var filter = (_reaction, user) => {
+                            return message.guild.members.cache.find(member => member.id == user.id).roles.cache.find(role => role.id == roleNeededID)
+                        }
+                        var collector = message.createReactionCollector(filter)
+
+                        collector.on("collect", (reaction, user) => {
+                            switch (reaction.emoji.name) {
+                                case "✅":
+                                    applicationDbRef.child("lastAcceptedBy").set(user.id)
+                                    applicationDbRef.child("status").set("accepted")
+                                    break;
+
+                                case "❎":
+                                    applicationDbRef.child("lastRejectedBy").set(user.id)
+                                    applicationDbRef.child("status").set("rejected")
+                                    break;
+
+                                default:
+                                    break;
+                            }
+
+                            var userReactions = message.reactions.cache.filter(reaction => reaction.users.cache.has(user.id))
+                            for (var reaction1 of userReactions.values()) {
+                                reaction1.users.remove(user.id)
+                            }
+                        })
+                    })
+                })
             })
         })
     }
@@ -160,6 +215,8 @@ class RegisterNation {
                 listOfFieldsForRegistration.forEach(fieldName => {
                     embed.addField(fieldName, snapshot.val().fields[fieldName])
                 });
+
+                embed.addField("Status", snapshot.val().status)
 
                 mapgameBotUtilFunctions.generateMapFromMapCode(snapshot.val().mapClaimCode).then(mapPath => {
                     embed.attachFiles([mapPath])

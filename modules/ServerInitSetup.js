@@ -125,10 +125,21 @@ class ServerInitSetup {
                             break;
                         }
 
-                        if (!this.client.guilds.cache.get(this.guildID).members.cache.get(this.client.user.id).permissionsIn(this.mapgameBotUtilFunctions.getChannelFromMention(cMsg.content)).has("VIEW_CHANNEL")) {
-                            cMsg.channel.send("It seems I can't find that channel...make sure I have the correct permissions to view that channel.")
+                        if (!this.client.guilds.cache.get(this.guildID).members.cache.get(this.client.user.id).permissionsIn(this.mapgameBotUtilFunctions.getChannelFromMention(cMsg.content)).has(["VIEW_CHANNEL", "SEND_MESSAGES"])) {
+                            cMsg.channel.send("It seems I can't find that channel...make sure I have the correct permissions to view that channel and send messages in it.")
                             collector2.collected.delete(collector2.collected.lastKey())
                             cMsg.channel.send("What channel should I send nation applications in for moderator review? (make sure to have the channel name mentioned, highlighted blue)")
+                            break;
+                        }
+
+                        cMsg.channel.send("What role should moderators have to have to be able to accept or reject nation applications? Make sure to mention the role.")
+                        break;
+
+                    case 3:
+                        if (this.mapgameBotUtilFunctions.getUserFromMention(cMsg.content, true, this.client.guilds.cache.get(this.guildID)) == "invalid mention") {
+                            cMsg.channel.send("Invalid role.")
+                            collector1.collected.delete(collector1.collected.lastKey())
+                            msg.channel.send("What role should moderators have to have to be able to accept or reject nation applications? Make sure to mention the role.")
                             break;
                         }
 
@@ -140,10 +151,9 @@ class ServerInitSetup {
                             .addField("Example:", "If I have a field called 'Nation name', I could send \"[username] | [Nation name]\" which would turn in to, for example, 'Mapgame Bot | My Epic Nation Name'.")
                             .addField("Don't want to do this step?", "If so, simply send \"skip\"")
                         cMsg.channel.send(embed2)
-
                         break;
 
-                    case 3:
+                    case 4:
                         if (cMsg.content.toLowerCase() == "skip") {
                             cMsg.channel.send("Done! Nickname template skipped.")
                             cMsg.channel.send("When a member registers a new nation, should a channel be created for that nation? (yes/no)")
@@ -169,7 +179,7 @@ class ServerInitSetup {
                         }
                         break;
 
-                    case 4:
+                    case 5:
                         if (cMsg.content.toLowerCase() == "yes") {
                             nationChannelBool = true
 
@@ -199,7 +209,7 @@ class ServerInitSetup {
                             return
                         }
 
-                    case 5:
+                    case 6:
                         if (cMsg.content.toLowerCase() == "skip") {
                             nationChannelBool = false
 
@@ -241,7 +251,7 @@ class ServerInitSetup {
                         }
                         break;
 
-                    case 6:
+                    case 7:
                         if (!this.client.guilds.cache.get(this.guildID).members.cache.get(this.client.user.id).permissionsIn(this.client.guilds.cache.get(this.guildID).channels.cache.find(channel => channel.name.toLowerCase() == cMsg.content.toLowerCase())).has("VIEW_CHANNEL")) {
                             cMsg.channel.send("It seems I can't find that channel...make sure I have the correct permissions to view that channel.")
                             collector2.collected.delete(collector2.collected.lastKey())
@@ -270,13 +280,13 @@ class ServerInitSetup {
 
                 var welcomeChannelID = this.mapgameBotUtilFunctions.getChannelFromMention(collector1Collected.array()[0].content).id
                 var autoRoleRoleID = this.mapgameBotUtilFunctions.getUserFromMention(collector1Collected.array()[1].content, true, this.client.guilds.cache.get(this.guildID)).id
-                var nicknameTemplate = collector2Collected.array()[2].content
+                var nicknameTemplate = collector2Collected.array()[3].content
                 var channelTemplate
                 var channelCategory
                 switch (nationChannelBool) {
                     case true:
-                        channelTemplate = collector2Collected.array()[4].content
-                        channelCategory = collector2Collected.array()[5].content
+                        channelTemplate = collector2Collected.array()[5].content
+                        channelCategory = collector2Collected.array()[6].content
                         break;
 
                     case false:
@@ -292,6 +302,7 @@ class ServerInitSetup {
                 var channelToSendNationApplicationsToID = this.mapgameBotUtilFunctions.getChannelFromMention(collector2Collected.array()[1].content).id
                 this.client.guilds.cache.get(this.guildID).channels.cache.get(channelToSendNationApplicationsToID).createOverwrite(this.client.guilds.cache.get(this.guildID).roles.everyone, { SEND_MESSAGES: false })
                 this.client.guilds.cache.get(this.guildID).channels.cache.get(channelToSendNationApplicationsToID).createOverwrite(this.client.user, { SEND_MESSAGES: true })
+                var roleNeededToProcessNationApplicationsID = this.mapgameBotUtilFunctions.getUserFromMention(collector2Collected.array()[2].content, true, this.client.guilds.cache.get(this.guildID)).id
 
                 var ref2 = this.db.ref(this.guildID + "/config")
                 ref2.update({
@@ -302,7 +313,8 @@ class ServerInitSetup {
                     nicknameTemplate: nicknameTemplate,
                     channelTemplate: channelTemplate.split(" ").join("-"),
                     channelCategory: channelCategory.toLowerCase(),
-                    channelToSendNationApplicationsToID: channelToSendNationApplicationsToID
+                    channelToSendNationApplicationsToID: channelToSendNationApplicationsToID,
+                    roleNeededToProcessNationApplicationsID: roleNeededToProcessNationApplicationsID
                 })
             })
         })
