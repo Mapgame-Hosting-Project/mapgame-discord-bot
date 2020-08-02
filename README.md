@@ -16,7 +16,9 @@ To add the bot to your server, click the link [here][discord add bot link]
  * Welcome message
  * Nation registration:
    * Fully customisable form
-   * Streamlined process for mods to approve or reject applications
+   * Streamlined process for mods to accept or reject applications
+   * Notifies user when they're application is accepted or rejected
+ * Built-in map claim system
 
 *More coming soon!*
 
