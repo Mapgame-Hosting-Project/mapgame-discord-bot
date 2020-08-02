@@ -31,8 +31,8 @@ fetch("res/colours with coords.json").then(response => response.json()).then(col
         var stuff = handleMainCanvasClick(canvas, e, coloursWithCoordsJSON)
         var colourList = stuff[1]
 
-        console.log(pixelToAddToCode[0])
-        handleProvinceClick(pixelToAddToCode[0])
+        console.log(stuff[0])
+        handleProvinceClick(stuff[0])
 
         if (colourList[0] != 0 && colourList[1] != 0 && colourList[2] != 0) {
             recolorImage(img1, colourList[0], colourList[1], colourList[2], 0, 0, 0, canvas)
