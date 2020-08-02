@@ -30,6 +30,7 @@ fetch("res/colours with coords.json").then(response => response.json()).then(col
     canvas.addEventListener("click", function(e) {
         var pixelToAddToCode, colourList = handleMainCanvasClick(canvas, e, coloursWithCoordsJSON)
 
+        console.log(pixelToAddToCode)
         handleProvinceClick(pixelToAddToCode)
 
         if (colourList[0] != 0 && colourList[1] != 0 && colourList[2] != 0) {
