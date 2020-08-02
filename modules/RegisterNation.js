@@ -172,6 +172,14 @@ class RegisterNation {
                                                     channel.setParent(message.guild.channels.cache.find(channel => channel.name.toLowerCase() == snapshot3.val().channelCategory).id)
                                                 })
                                             }
+
+                                            var nationJSONObject = { fields: {} }
+                                            nationJSONObject.fields = snapshot4.val().fields
+                                            nationJSONObject.mapClaimCode = snapshot4.val().mapClaimCode
+                                            var ref4 = db.ref(guildID + "/nations")
+                                            ref4.update({
+                                                [applicationDbRef.key]: nationJSONObject
+                                            })
                                         })
                                     })
                                     break;

@@ -13,6 +13,7 @@ var db = admin.database()
 var MapgameBotUtilFunctions = require("./modules/MapgameBotUtilFunctions.js")
 var ServerInitSetup = require("./modules/ServerInitSetup.js")
 var RegisterNation = require("./modules/RegisterNation.js")
+const { toolresults } = require("googleapis/build/src/apis/toolresults")
 
 client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}!`)
@@ -125,14 +126,43 @@ function handleCommand(msg, command, args) {
             break;
 
         case "stats":
-            var listOfNations = []
+            var listOfNationsKeys = []
             var ref = db.ref(guildID + "/nations")
             ref.once("value", (snapshot) => {
                 if (!snapshot.exists()) {
                     msg.channel.send("No nations found.")
                     return
                 } else {
-                    // at least 1 nation found
+                    Object.keys(snapshot.val()).forEach(nationKey => {
+                        listOfNationsKeys.push(nationKey)
+                    });
+
+                    var mapgameBotUtilFunctions = new MapgameBotUtilFunctions(client)
+
+                    var ref2 = db.ref(guildID + "/config/listOfFieldsForRegistration")
+                    ref2.once("value", (snapshot2) => {
+                        var nationsFieldValues = []
+                        listOfNationsKeys.forEach(nationKey => {
+                            var nationValueForField = ""
+                            snapshot2.val().forEach(fieldName => {
+                                nationValueForField += fieldName + ": " + snapshot.val()[nationKey].fields[fieldName] + "\n"
+                            });
+
+                            nationsFieldValues.push({
+                                name: mapgameBotUtilFunctions.getUserFromMention("<@" + snapshot.child(nationKey).key + ">").username,
+                                value: nationValueForField,
+                                inline: true
+                            })
+                        });
+
+                        console.log(nationsFieldValues)
+
+                        var embed = new Discord.MessageEmbed()
+                            .setTitle("List of Nations")
+                            .setColor("#009900")
+                            .addFields(nationsFieldValues)
+                        msg.channel.send(embed)
+                    })
                 }
             })
 
