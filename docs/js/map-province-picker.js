@@ -105,7 +105,7 @@ function recolorImage(img, oldRed, oldGreen, oldBlue, newRed, newGreen, newBlue,
     // put the altered data back on the canvas  
     ctx.putImageData(imageData, 0, 0);
     // put the re-colored image back on the image
-    var img1 = document.getElementById("image1");
-    img1.src = c.toDataURL('image/png');
+
+    img.src = c.toDataURL('image/png');
 
 }
