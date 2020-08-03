@@ -13,7 +13,6 @@ var db = admin.database()
 var MapgameBotUtilFunctions = require("./modules/MapgameBotUtilFunctions.js")
 var ServerInitSetup = require("./modules/ServerInitSetup.js")
 var RegisterNation = require("./modules/RegisterNation.js")
-const { toolresults } = require("googleapis/build/src/apis/toolresults")
 
 client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}!`)
