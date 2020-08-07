@@ -1,6 +1,7 @@
 class MapgameBotUtilFunctions {
     constructor(botClient) {
         this.childProcess = require("child_process")
+        this.Discord = require("discord.js")
 
         this.client = botClient
     }
