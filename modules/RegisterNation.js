@@ -12,121 +12,194 @@ class RegisterNation {
         var checkRef = this.db.ref(this.guildID + "/config/setupComplete")
         checkRef.once("value", (snapshot) => {
             if (snapshot.val() == "yes") {
-                var listOfFieldsForRegistration
-                var ref = this.db.ref(this.guildID + "/config/listOfFieldsForRegistration")
-                ref.once("value", (snapshot) => {
-                    listOfFieldsForRegistration = snapshot.val()
-                    console.log(listOfFieldsForRegistration)
+                //check for user's nation application status (if it exists)
 
-                    // create collector that only receives messages from same user, then process form once it has been sent
+                var userCheckRef = this.db.ref(this.guildID + "/nationApplications/" + msg.member.id + "/status")
+                userCheckRef.once("value", (snapshot) => {
+                    var ableToContinueRegistration
 
-                    var filter = m => m.member.id === msg.member.id
-                    var collector = msg.channel.createMessageCollector(filter)
+                    switch (snapshot.val()) {
+                        case "accepted":
+                            msg.channel.send("You are already a nation! Ask an admin if you can swap nations or create a new one.")
+                            ableToContinueRegistration = false
+                            break;
 
-                    msg.channel.send("Fill out the following details about your nation. Send \"cancel\" at any time to cancel the registration process.")
+                        case "rejected":
+                            msg.channel.send("Bad news: your original application was rejected. Good news: that means you can submit a new one!")
+                            ableToContinueRegistration = true
+                            break;
 
-                    msg.channel.send(listOfFieldsForRegistration[0] + ":")
+                        case "pendingApproval":
+                            msg.channel.send("You're old application is still pending...type " + this.config.prefix + "cancel-registration to cancel it, then run this command again.")
+                            ableToContinueRegistration = false
+                            break;
 
-                    collector.on("collect", cMsg => {
-                        console.log(collector.collected.size)
-                        console.log(listOfFieldsForRegistration.length)
+                        case "cancelled":
+                            ableToContinueRegistration = true
+                            break;
 
-                        if (cMsg.content.toLowerCase() == "cancel") {
-                            collector.stop()
+                        default:
+                            ableToContinueRegistration = true
+                            break;
+                    }
 
-                            cMsg.channel.send("Registration cancelled.")
+                    switch (ableToContinueRegistration) {
+                        case true:
+                            var listOfFieldsForRegistrationRef = this.db.ref(this.guildID + "/config/listOfFieldsForRegistration")
+                            listOfFieldsForRegistrationRef.once("value", (snapshot) => {
+                                var listOfFieldsForRegistration = snapshot.val()
 
-                            return
-                        }
+                                // create collector that only receives messages from same user, then process form once it has been sent
 
-                        if (collector.collected.size == listOfFieldsForRegistration.length) {
-                            cMsg.channel.send("Now to do your initial map claim. Follow the instructions below.")
-                            var embed = new this.Discord.MessageEmbed()
-                                .setColor("#009900")
-                                .setTitle("Map claim instructions")
-                                .addField("How to get your map claim code", "Visit the website [here](https://phyrik.github.io/mapgame-discord-bot/map-province-picker.html) and follow the instructions to generate your mapgame code.")
-                                .addField("Ok... what now?", "Simply copy paste that code and send it here! Once you've done that, you will get a confirmation message.")
-                            cMsg.channel.send(embed)
+                                var filter = m => m.member.id === msg.member.id
+                                var formAnswerCollector = msg.channel.createMessageCollector(filter)
 
-                            return
-                        }
+                                msg.channel.send("Fill out the following details about your nation. Send \"cancel\" at any time to cancel the registration process.")
 
-                        if (collector.collected.size == listOfFieldsForRegistration.length + 1) {
-                            cMsg.channel.send("Generating map claim preview... (this may take a while)")
+                                msg.channel.send(listOfFieldsForRegistration[0] + ":")
 
-                            this.mapgameBotUtilFunctions.generateMapFromMapCode(cMsg.content).then(mapPath => {
-                                if (mapPath == "error parsing map code") {
-                                    collector.collected.delete(collector.collected.lastKey())
+                                formAnswerCollector.on("collect", cMsg => {
+                                    console.log(formAnswerCollector.collected.size)
+                                    console.log(listOfFieldsForRegistration.length)
 
-                                    cMsg.channel.send("Invalid map code. Send another map claim code from the website (https://phyrik.github.io/mapgame-discord-bot/map-province-picker.html).")
+                                    if (cMsg.content.toLowerCase() == "cancel") {
+                                        formAnswerCollector.stop()
 
-                                    return
-                                }
+                                        cMsg.channel.send("Registration cancelled.")
 
-                                cMsg.channel.send("Is this claim ok? (yes/no)", { files: [mapPath] })
+                                        return
+                                    }
+
+                                    if (formAnswerCollector.collected.size == listOfFieldsForRegistration.length) {
+                                        formAnswerCollector.stop()
+
+                                        return
+                                    }
+
+                                    cMsg.channel.send(listOfFieldsForRegistration[formAnswerCollector.collected.size] + ":")
+                                })
+
+                                formAnswerCollector.on("end", collected => {
+                                    if (collected.array()[collected.array().length - 1].content.toLowerCase() == "cancel") {
+                                        return
+                                    }
+
+                                    try {
+                                        var answers = []
+                                        collected.array().forEach(message => {
+                                            answers.push(message.content)
+                                        });
+
+                                        var formJSONObject = {
+                                            fields: {}
+                                        }
+                                        console.log(listOfFieldsForRegistration)
+                                        for (var i = 0; i < listOfFieldsForRegistration.length; i++) {
+                                            formJSONObject.fields[listOfFieldsForRegistration[i]] = answers[i]
+                                            console.log(listOfFieldsForRegistration[i] + ": " + answers[i])
+                                        }
+                                        formJSONObject["status"] = "pendingApproval"
+
+                                        var serverTypeCheckRef = this.db.ref(this.guildID + "/config/customOrIrlNation")
+                                        serverTypeCheckRef.once("value", (snapshot) => {
+                                            switch (snapshot.val()) {
+                                                case "custom":
+                                                    // ask for map claim, then submit form
+
+                                                    var filter2 = m => m.member.id === msg.member.id
+                                                    var mapClaimCollector = msg.channel.createMessageCollector(filter2)
+
+                                                    msg.channel.send("Now to do your initial map claim. Follow the instructions below.")
+                                                    var embed = new this.Discord.MessageEmbed()
+                                                        .setColor("#009900")
+                                                        .setTitle("Map claim instructions")
+                                                        .addField("How to get your map claim code", "Visit the website [here](https://phyrik.github.io/mapgame-discord-bot/map-province-picker.html) and follow the instructions to generate your mapgame code.")
+                                                        .addField("Ok... what now?", "Simply copy paste that code and send it here! Once you've done that, you will get a confirmation message.")
+                                                    msg.channel.send(embed)
+
+                                                    mapClaimCollector.on("collect", cMsg => {
+                                                        switch (mapClaimCollector.collected.size) {
+                                                            case 1:
+                                                                cMsg.channel.send("Generating map claim preview... (this may take a while)")
+
+                                                                this.mapgameBotUtilFunctions.generateMapFromMapCode(cMsg.content).then(mapPath => {
+                                                                    if (mapPath == "error parsing map code") {
+                                                                        mapClaimCollector.collected.delete(mapClaimCollector.collected.lastKey())
+
+                                                                        cMsg.channel.send("Invalid map code. Send another map claim code from the website (https://phyrik.github.io/mapgame-discord-bot/map-province-picker.html).")
+
+                                                                        return
+                                                                    }
+
+                                                                    cMsg.channel.send("Is this claim ok? (yes/no)", { files: [mapPath] })
+                                                                })
+                                                                break;
+
+                                                            case 2:
+                                                                if (cMsg.content.toLowerCase() == "yes" || cMsg.content.toLowerCase() == "y") {
+                                                                    mapClaimCollector.stop()
+                                                                } else {
+                                                                    mapClaimCollector.collected.delete(mapClaimCollector.collected.lastKey())
+                                                                    mapClaimCollector.collected.delete(mapClaimCollector.collected.lastKey())
+
+                                                                    cMsg.channel.send("Send another map claim code from the website (https://phyrik.github.io/mapgame-discord-bot/map-province-picker.html).")
+                                                                }
+                                                                break;
+
+                                                            default:
+                                                                break;
+                                                        }
+                                                    })
+
+                                                    mapClaimCollector.on("end", collected => {
+                                                        formJSONObject["mapClaimCode"] = collected.array()[0].content
+
+                                                        var ref = this.db.ref(this.guildID + "/nationApplications/" + msg.member.id)
+                                                        ref.update(formJSONObject)
+
+                                                        RegisterNation.sendApplicationToModReviewChannel(this.guildID, ref, this.db, this.mapgameBotUtilFunctions, listOfFieldsForRegistration)
+
+                                                        collected.array()[0].channel.send("Done! Your registration form is now submitted. To cancel it, type \"" + this.config.prefix + "cancel-registration\".")
+                                                    })
+                                                    break;
+
+                                                case "irl":
+                                                    // submit form
+
+                                                    var ref = this.db.ref(this.guildID + "/nationApplications/" + msg.member.id)
+                                                    ref.update(formJSONObject)
+
+                                                    RegisterNation.sendApplicationToModReviewChannel(this.guildID, ref, this.db, this.mapgameBotUtilFunctions, listOfFieldsForRegistration)
+
+                                                    collected.array()[0].channel.send("Done! Your registration form is now submitted. To cancel it, type \"" + this.config.prefix + "cancel-registration\".")
+                                                    break;
+
+                                                default:
+                                                    break;
+                                            }
+                                        })
+
+                                        console.log(formJSONObject)
+                                    } catch (e) {
+                                        console.log(e)
+                                        collected.array()[0].channel.send("Whoops! There was something wrong with submitting your form. Type \"" + this.config.prefix + "register\" to try again.")
+
+                                        var ref = this.db.ref(this.guildID + "/nationApplications/" + msg.member.id)
+                                        ref.remove()
+                                    }
+                                })
                             })
+                            break;
 
+                        case false:
+                            msg.channel.send("Registration cancelled.")
                             return
-                        }
 
-                        if (collector.collected.size == listOfFieldsForRegistration.length + 2) {
-                            if (cMsg.content.toLowerCase() == "yes" || cMsg.content.toLowerCase() == "y") {
-                                collector.stop()
-
-                                return
-                            } else {
-                                collector.collected.delete(collector.collected.lastKey())
-                                collector.collected.delete(collector.collected.lastKey())
-
-                                cMsg.channel.send("Send another map claim code from the website (https://phyrik.github.io/mapgame-discord-bot/map-province-picker.html).")
-
-                                return
-                            }
-                        }
-
-                        cMsg.channel.send(listOfFieldsForRegistration[collector.collected.size] + ":")
-                    })
-
-                    collector.on("end", collected => {
-                        if (collected.array()[collected.array().length - 1].content.toLowerCase() == "cancel") {
-                            return
-                        }
-
-                        try {
-                            var answers = []
-                            collected.array().slice(0, listOfFieldsForRegistration.length).forEach(message => {
-                                answers.push(message.content)
-                            });
-
-                            var formJSONObject = {
-                                fields: {}
-                            }
-                            console.log(listOfFieldsForRegistration)
-                            for (var i = 0; i < listOfFieldsForRegistration.length; i++) {
-                                console.log("sb1")
-                                formJSONObject.fields[listOfFieldsForRegistration[i]] = answers[i]
-                                console.log(listOfFieldsForRegistration[i] + ": " + answers[i])
-                            }
-                            formJSONObject["status"] = "pendingApproval"
-                            formJSONObject["mapClaimCode"] = collected.array()[listOfFieldsForRegistration.length].content
-
-                            console.log(formJSONObject)
-
-                            var ref = this.db.ref(this.guildID + "/nationApplications/" + msg.member.id)
-                            ref.update(formJSONObject)
-
-                            RegisterNation.sendApplicationToModReviewChannel(this.guildID, ref, this.db, this.mapgameBotUtilFunctions, listOfFieldsForRegistration)
-
-                            collected.array()[0].channel.send("Done! Your registration form is now submitted. To cancel it, type \"" + this.config.prefix + "cancel-registration\".")
-                        } catch (e) {
-                            console.log(e)
-                            collected.array()[0].channel.send("Whoops! There was something wrong with submitting your form. Type \"" + this.config.prefix + "register\" to try again.")
-
-                            var ref = this.db.ref(this.guildID + "/nationApplications/" + msg.member.id)
-                            ref.remove()
-                        }
-                    })
+                        default:
+                            break;
+                    }
                 })
+
             } else {
                 msg.channel.send("This server hasn't been set up with us yet! Contact an admin and get them to run the command \"" + config.prefix + "init\".")
                 return
@@ -140,11 +213,11 @@ class RegisterNation {
         this.constructApplicationReviewEmbed(applicationDbRef, mapgameBotUtilFunctions, listOfFieldsForRegistration).then(embed => {
             applicationEmbed = embed
 
-            var ref = db.ref(guildID + "/config/channelToSendNationApplicationsToID")
+            var ref = db.ref(guildID + "/config/channelToSendApplicationsToID")
             ref.once("value", (snapshot) => {
                 var channelToSendApplicationEmbedTo = mapgameBotUtilFunctions.getChannelFromMention("<#" + snapshot.val() + ">")
 
-                var ref2 = db.ref(guildID + "/config/roleNeededToProcessNationApplicationsID")
+                var ref2 = db.ref(guildID + "/config/roleRequiredToProcessApplicationsID")
                 ref2.once("value", (snapshot1) => {
                     var roleNeededID = snapshot1.val()
 
@@ -163,7 +236,7 @@ class RegisterNation {
                                     ref3.once("value", (snapshot3) => {
                                         applicationDbRef.once("value", (snapshot4) => {
                                             if (snapshot3.val().nicknameTemplate != "skip") {
-                                                message.guild.members.cache.find(member => member.id == applicationDbRef.key).setNickname(mapgameBotUtilFunctions.replaceTemplateWithFieldValues(snapshot3.val().nicknameTemplate, listOfFieldsForRegistration, snapshot4.val().fields))
+                                                message.guild.members.cache.find(member => member.id == applicationDbRef.key).setNickname(mapgameBotUtilFunctions.replaceTemplateWithFieldValues(snapshot3.val().nicknameTemplate, listOfFieldsForRegistration, snapshot4.val().fields)).catch(error => console.log(error))
                                             }
 
                                             if (snapshot3.val().channelTemplate != "skip") {
