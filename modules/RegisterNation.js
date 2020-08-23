@@ -9,12 +9,12 @@ class RegisterNation {
     }
 
     start(msg) {
-        var checkRef = this.db.ref(this.guildID + "/config/setupComplete")
+        var checkRef = this.db.ref("discord-servers/" + this.guildID + "/config/setupComplete")
         checkRef.once("value", (snapshot) => {
             if (snapshot.val() == "yes") {
                 //check for user's nation application status (if it exists)
 
-                var userCheckRef = this.db.ref(this.guildID + "/nationApplications/" + msg.member.id + "/status")
+                var userCheckRef = this.db.ref("discord-servers/" + this.guildID + "/nationApplications/" + msg.member.id + "/status")
                 userCheckRef.once("value", (snapshot) => {
                     var ableToContinueRegistration
 
@@ -45,7 +45,7 @@ class RegisterNation {
 
                     switch (ableToContinueRegistration) {
                         case true:
-                            var listOfFieldsForRegistrationRef = this.db.ref(this.guildID + "/config/listOfFieldsForRegistration")
+                            var listOfFieldsForRegistrationRef = this.db.ref("discord-servers/" + this.guildID + "/config/listOfFieldsForRegistration")
                             listOfFieldsForRegistrationRef.once("value", (snapshot) => {
                                 var listOfFieldsForRegistration = snapshot.val()
 
@@ -100,7 +100,7 @@ class RegisterNation {
                                         }
                                         formJSONObject["status"] = "pendingApproval"
 
-                                        var serverTypeCheckRef = this.db.ref(this.guildID + "/config/customOrIrlNation")
+                                        var serverTypeCheckRef = this.db.ref("discord-servers/" + this.guildID + "/config/customOrIrlNation")
                                         serverTypeCheckRef.once("value", (snapshot) => {
                                             switch (snapshot.val()) {
                                                 case "custom":
@@ -154,7 +154,7 @@ class RegisterNation {
                                                     mapClaimCollector.on("end", collected => {
                                                         formJSONObject["mapClaimCode"] = collected.array()[0].content
 
-                                                        var ref = this.db.ref(this.guildID + "/nationApplications/" + msg.member.id)
+                                                        var ref = this.db.ref("discord-servers/" + this.guildID + "/nationApplications/" + msg.member.id)
                                                         ref.update(formJSONObject)
 
                                                         RegisterNation.sendApplicationToModReviewChannel(this.guildID, ref, this.db, this.mapgameBotUtilFunctions, listOfFieldsForRegistration)
@@ -166,7 +166,7 @@ class RegisterNation {
                                                 case "irl":
                                                     // submit form
 
-                                                    var ref = this.db.ref(this.guildID + "/nationApplications/" + msg.member.id)
+                                                    var ref = this.db.ref("discord-servers/" + this.guildID + "/nationApplications/" + msg.member.id)
                                                     ref.update(formJSONObject)
 
                                                     RegisterNation.sendApplicationToModReviewChannel(this.guildID, ref, this.db, this.mapgameBotUtilFunctions, listOfFieldsForRegistration)
@@ -184,7 +184,7 @@ class RegisterNation {
                                         console.log(e)
                                         collected.array()[0].channel.send("Whoops! There was something wrong with submitting your form. Type \"" + this.config.prefix + "register\" to try again.")
 
-                                        var ref = this.db.ref(this.guildID + "/nationApplications/" + msg.member.id)
+                                        var ref = this.db.ref("discord-servers/" + this.guildID + "/nationApplications/" + msg.member.id)
                                         ref.remove()
                                     }
                                 })
@@ -213,11 +213,11 @@ class RegisterNation {
         this.constructApplicationReviewEmbed(applicationDbRef, mapgameBotUtilFunctions, listOfFieldsForRegistration).then(embed => {
             applicationEmbed = embed
 
-            var ref = db.ref(guildID + "/config/channelToSendApplicationsToID")
+            var ref = db.ref("discord-servers/" + guildID + "/config/channelToSendApplicationsToID")
             ref.once("value", (snapshot) => {
                 var channelToSendApplicationEmbedTo = mapgameBotUtilFunctions.getChannelFromMention("<#" + snapshot.val() + ">")
 
-                var ref2 = db.ref(guildID + "/config/roleRequiredToProcessApplicationsID")
+                var ref2 = db.ref("discord-servers/" + guildID + "/config/roleRequiredToProcessApplicationsID")
                 ref2.once("value", (snapshot1) => {
                     var roleNeededID = snapshot1.val()
 
@@ -232,7 +232,7 @@ class RegisterNation {
                                 case "accepted":
                                     client.users.cache.find(user => user.id == applicationDbRef.key).send("Your nation application for the server \"" + guildName + "\" has been accepted!")
 
-                                    var ref3 = db.ref(guildID + "/config")
+                                    var ref3 = db.ref("discord-servers/" + guildID + "/config")
                                     ref3.once("value", (snapshot3) => {
                                         applicationDbRef.once("value", (snapshot4) => {
                                             if (snapshot3.val().nicknameTemplate != "skip") {
@@ -249,7 +249,7 @@ class RegisterNation {
                                             var nationJSONObject = { fields: {} }
                                             nationJSONObject.fields = snapshot4.val().fields
                                             nationJSONObject.mapClaimCode = snapshot4.val().mapClaimCode
-                                            var ref4 = db.ref(guildID + "/nations")
+                                            var ref4 = db.ref("discord-servers/" + guildID + "/nations")
                                             ref4.update({
                                                 [applicationDbRef.key]: nationJSONObject
                                             })

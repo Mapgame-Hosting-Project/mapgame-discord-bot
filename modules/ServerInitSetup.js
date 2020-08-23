@@ -43,7 +43,7 @@ class ServerInitSetup {
                         break;
                     }
 
-                    cMsg.channel.send("What role should I give members when they join? Make sure to mention the role. To skip this step, send a message with \"skip\".")
+                    cMsg.channel.send("What role should I give members when they join? Make sure to mention the role.")
                     break;
 
                 case 2:
@@ -259,12 +259,27 @@ class ServerInitSetup {
                                         break;
 
                                     default:
+                                        collector2.collected.delete(collector2.collected.lastKey())
+                                        var embed3 = new this.Discord.MessageEmbed()
+                                            .setTitle("Is your server a custom nation rp or an irl nation rp?")
+                                            .setColor("#009900")
+                                            .addField("Custom nation rp", "This is a type of roleplay where members choose a nation by picking tiles from a map and expanding a certain amount each day.")
+                                            .addField("IRL nation rp", "This is a type of roleplay where members choose from a predefined list of nations, for example the countries that fought during world war 2, and can only expand by conquering more territory.")
+                                            .addField("Instructions", "Send \"1\" for custom nation rp and \"2\" for an IRL nation rp")
+                                        cMsg.channel.send(embed3)
                                         break;
                                 }
                                 break;
 
                             default: // user did not skip channel template, their cMsg is the category to add nation channels to
-                                if (!this.client.guilds.cache.get(this.guildID).members.cache.get(this.client.user.id).permissionsIn(this.client.guilds.cache.get(this.guildID).channels.cache.find(channel => channel.name.toLowerCase() == cMsg.content.toLowerCase())).has(["VIEW_CHANNEL", "MANAGE_CHANNELS"])) {
+                                try {
+                                    if (!this.client.guilds.cache.get(this.guildID).members.cache.get(this.client.user.id).permissionsIn(this.client.guilds.cache.get(this.guildID).channels.cache.find(channel => channel.name.toLowerCase() == cMsg.content.toLowerCase())).has(["VIEW_CHANNEL", "MANAGE_CHANNELS"])) {
+                                        cMsg.channel.send("It seems I can't find that channel category...make sure I have the correct permissions to view that channel and manage its channels.")
+                                        collector2.collected.delete(collector2.collected.lastKey())
+                                        cMsg.channel.send("What is the name of the channel category I should add new nations' channels to?")
+                                        break;
+                                    }
+                                } catch {
                                     cMsg.channel.send("It seems I can't find that channel category...make sure I have the correct permissions to view that channel and manage its channels.")
                                     collector2.collected.delete(collector2.collected.lastKey())
                                     cMsg.channel.send("What is the name of the channel category I should add new nations' channels to?")
@@ -316,6 +331,14 @@ class ServerInitSetup {
                                 break;
 
                             default:
+                                collector2.collected.delete(collector2.collected.lastKey())
+                                var embed3 = new this.Discord.MessageEmbed()
+                                    .setTitle("Is your server a custom nation rp or an irl nation rp?")
+                                    .setColor("#009900")
+                                    .addField("Custom nation rp", "This is a type of roleplay where members choose a nation by picking tiles from a map and expanding a certain amount each day.")
+                                    .addField("IRL nation rp", "This is a type of roleplay where members choose from a predefined list of nations, for example the countries that fought during world war 2, and can only expand by conquering more territory.")
+                                    .addField("Instructions", "Send \"1\" for custom nation rp and \"2\" for an IRL nation rp")
+                                cMsg.channel.send(embed3)
                                 break;
                         }
                         break;
@@ -343,6 +366,10 @@ class ServerInitSetup {
             collector2.on("end", collector2Collected => {
                 // FYI: collector1Collected is within this scope
 
+                if (collector2Collected.array()[collector2Collected.array().length - 1].content.toLowerCase() == "cancel") {
+                    return
+                }
+
                 var welcomeChannelID = this.mapgameBotUtilFunctions.getChannelFromMention(collector1Collected.array()[0].content).id
                 var autoRoleRoleID = this.mapgameBotUtilFunctions.getUserFromMention(collector1Collected.array()[1].content, true, this.client.guilds.cache.get(this.guildID)).id
 
@@ -352,7 +379,7 @@ class ServerInitSetup {
                 var channelTemplate = collector2Collected.array()[4].content
                 var categoryToAddNationChannelsToID
                 if (collector2Collected.array()[4].content != "skip") {
-                    categoryToAddNationChannelsToID = this.mapgameBotUtilFunctions.getChannelFromMention(collector2Collected.array()[5].content)
+                    categoryToAddNationChannelsToID = this.client.guilds.cache.get(this.guildID).channels.cache.find(c => c.name.toLowerCase() == collector2Collected.array()[5].content.toLowerCase()).id
                 } else {
                     categoryToAddNationChannelsToID = "skip"
                 }
@@ -397,7 +424,7 @@ class ServerInitSetup {
                     numberOfTilesToClaimEachDay = "skip"
                 }
 
-                var ref2 = this.db.ref(this.guildID + "/config")
+                var ref2 = this.db.ref("discord-servers/" + this.guildID + "/config")
                 ref2.update({
                     setupComplete: "yes",
                     welcomeChannelID: welcomeChannelID,

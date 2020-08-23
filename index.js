@@ -32,7 +32,7 @@ client.on("guildCreate", guild => {
 })
 
 client.on("guildMemberAdd", member => {
-    var ref = db.ref(member.guild.id + "/config")
+    var ref = db.ref("discord-servers/" + member.guild.id + "/config")
     ref.once("value", (snapshot) => {
         var welcomeChannelID = snapshot.val().welcomeChannelID
         var autoRoleRoleID = snapshot.val().autoRoleRoleID
@@ -76,10 +76,10 @@ function handleCommand(msg, command, args) {
                 break;
             }
 
-            var ref = db.ref(guildID + "/config/setupComplete")
+            var ref = db.ref("discord-servers/" + guildID + "/config/setupComplete")
             ref.once("value", (snapshot) => {
                 if (snapshot.val() == "yes") {
-                    ref2 = db.ref(guildID + "/config")
+                    ref2 = db.ref("discord-servers/" + guildID + "/config")
                     ref2.remove().then(() => {
                         msg.channel.send("Done! You can now re-initialise the server with \"" + config.prefix + "init\".")
                     })
@@ -95,7 +95,7 @@ function handleCommand(msg, command, args) {
                 break;
             }
 
-            var ref = db.ref(guildID + "/config/setupComplete")
+            var ref = db.ref("discord-servers/" + guildID + "/config/setupComplete")
             ref.once("value", (snapshot) => {
                 if (snapshot.val() == "yes") {
                     msg.channel.send("You've already initialised this server! To reinitialise it, type \"" + config.prefix + "uninit\"")
@@ -116,7 +116,7 @@ function handleCommand(msg, command, args) {
 
         case "cr":
         case "cancel-registration":
-            var ref = db.ref(guildID + "/nationApplications/" + msg.member.id)
+            var ref = db.ref("discord-servers/" + guildID + "/nationApplications/" + msg.member.id)
             ref.update({
                 status: "cancelled"
             })
@@ -126,7 +126,7 @@ function handleCommand(msg, command, args) {
 
         case "stats":
             var listOfNationsKeys = []
-            var ref = db.ref(guildID + "/nations")
+            var ref = db.ref("discord-servers/" + guildID + "/nations")
             ref.once("value", (snapshot) => {
                 if (!snapshot.exists()) {
                     msg.channel.send("No nations found.")
@@ -138,7 +138,7 @@ function handleCommand(msg, command, args) {
 
                     var mapgameBotUtilFunctions = new MapgameBotUtilFunctions(client)
 
-                    var ref2 = db.ref(guildID + "/config/listOfFieldsForRegistration")
+                    var ref2 = db.ref("discord-servers/" + guildID + "/config/listOfFieldsForRegistration")
                     ref2.once("value", (snapshot2) => {
                         var nationsFieldValues = []
                         listOfNationsKeys.forEach(nationKey => {
