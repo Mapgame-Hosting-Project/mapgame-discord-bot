@@ -102,7 +102,7 @@ function handleCommand(msg, command, args) {
             }
 
             var checkKey = MapgameBotUtilFunctions.makeCheckKey(5)
-            var url = `https://localhost:44374/Create/DiscordServerSetup?guildID=${guildID}&userID=${msg.author.id}&checkKey=${checkKey}` // TODO: replace localhost with real domain
+            var url = `https://mapgamehostingwebsite20200827111104.azurewebsites.net/Create/DiscordServerSetup?guildID=${guildID}&userID=${msg.author.id}&checkKey=${checkKey}`
 
             var ref = db.ref("discord-check-keys/" + msg.author.id + "/create-guild")
             ref.set(guildID + "|" + checkKey)
