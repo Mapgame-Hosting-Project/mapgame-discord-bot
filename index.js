@@ -28,9 +28,10 @@ client.on("guildCreate", guild => {
         }
     })
 
-    defaultChannel.send("Hello! To start linking your server with the bot, type \"" + config.prefix + "help\". Also, make sure to have my role (which should be 'Mapgame Bot') at the top of your server's role list in your server's settings or else I won't work!")
+    defaultChannel.send("Hello! To start linking your server with the bot and website, type \"" + config.prefix + "init\". Also, make sure to have my role (which should be 'Mapgame Bot') at the top of your server's role list in your server's settings or else I won't work!")
 })
 
+/*
 client.on("guildMemberAdd", member => {
     var ref = db.ref("discord-servers/" + member.guild.id + "/config")
     ref.once("value", (snapshot) => {
@@ -46,9 +47,14 @@ client.on("guildMemberAdd", member => {
         }
     })
 })
+*/
 
 client.on("message", msg => {
     if (!msg.content.startsWith(config.prefix) || msg.author.bot) {
+        return
+    }
+
+    if (msg.guild === null) {
         return
     }
 
@@ -95,16 +101,14 @@ function handleCommand(msg, command, args) {
                 break;
             }
 
-            var ref = db.ref("discord-servers/" + guildID + "/config/setupComplete")
-            ref.once("value", (snapshot) => {
-                if (snapshot.val() == "yes") {
-                    msg.channel.send("You've already initialised this server! To reinitialise it, type \"" + config.prefix + "uninit\"")
-                    return
-                } else {
-                    var serverInitSetup = new ServerInitSetup(guildID, new MapgameBotUtilFunctions(client), client, db, config)
-                    serverInitSetup.start(msg)
-                }
-            })
+            var checkKey = MapgameBotUtilFunctions.makeCheckKey(5)
+            var url = `https://localhost:44374/Create/DiscordServerSetup?guildID=${guildID}&userID=${msg.author.id}&checkKey=${checkKey}` // TODO: replace localhost with real domain
+
+            var ref = db.ref("discord-check-keys/" + msg.author.id + "/create-guild")
+            ref.set(guildID + "|" + checkKey)
+
+            msg.channel.send("Check your DMs!")
+            msg.author.send("Click the link below to setup your server:\n\n" + url)
             break;
 
         case "rn":
