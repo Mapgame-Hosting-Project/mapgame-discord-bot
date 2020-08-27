@@ -11,8 +11,6 @@ def hexToRGBList(hexCode):
     return rgbToReturn
 
 def parseMapCode(code):
-    # code = "2670.424=#009900,2679.417=#009900"
-
     try:
         finalCodeList = []
         codeList1 = code.split(",")

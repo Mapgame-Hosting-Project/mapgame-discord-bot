@@ -113,11 +113,19 @@ class RegisterNation {
                                                     var embed = new this.Discord.MessageEmbed()
                                                         .setColor("#009900")
                                                         .setTitle("Map claim instructions")
-                                                        .addField("How to get your map claim code", "Visit the website [here](https://phyrik.github.io/mapgame-discord-bot/map-province-picker.html) and follow the instructions to generate your mapgame code.")
-                                                        .addField("Ok... what now?", "Simply copy paste that code and send it here! Once you've done that, you will get a confirmation message.")
+                                                        .addField("How to get your map claim code", "Visit the website [here](https://phyrik.github.io/mapgame-discord-bot/map-province-picker.html) and follow the instructions to generate your mapgame code file.")
+                                                        .addField("Ok... what now?", "Simply send the file you downloaded from the site here! Once you've done that, you will get a confirmation message.")
                                                     msg.channel.send(embed)
 
                                                     mapClaimCollector.on("collect", cMsg => {
+                                                        if (cMsg.content.toLowerCase() == "cancel") {
+                                                            formAnswerCollector.stop()
+
+                                                            cMsg.channel.send("Registration cancelled.")
+
+                                                            return
+                                                        }
+
                                                         switch (mapClaimCollector.collected.size) {
                                                             case 1:
                                                                 cMsg.channel.send("Generating map claim preview... (this may take a while)")
@@ -152,12 +160,14 @@ class RegisterNation {
                                                     })
 
                                                     mapClaimCollector.on("end", collected => {
+                                                        if (collected.array()[collected.array().length - 1].content.toLowerCase() == "cancel") {
+                                                            return
+                                                        }
+
                                                         formJSONObject["mapClaimCode"] = collected.array()[0].content
 
                                                         var ref = this.db.ref("discord-servers/" + this.guildID + "/nationApplications/" + msg.member.id)
                                                         ref.update(formJSONObject)
-
-                                                        RegisterNation.sendApplicationToModReviewChannel(this.guildID, ref, this.db, this.mapgameBotUtilFunctions, listOfFieldsForRegistration)
 
                                                         collected.array()[0].channel.send("Done! Your registration form is now submitted. To cancel it, type \"" + this.config.prefix + "cancel-registration\".")
                                                     })
@@ -168,8 +178,6 @@ class RegisterNation {
 
                                                     var ref = this.db.ref("discord-servers/" + this.guildID + "/nationApplications/" + msg.member.id)
                                                     ref.update(formJSONObject)
-
-                                                    RegisterNation.sendApplicationToModReviewChannel(this.guildID, ref, this.db, this.mapgameBotUtilFunctions, listOfFieldsForRegistration)
 
                                                     collected.array()[0].channel.send("Done! Your registration form is now submitted. To cancel it, type \"" + this.config.prefix + "cancel-registration\".")
                                                     break;
@@ -192,7 +200,6 @@ class RegisterNation {
                             break;
 
                         case false:
-                            msg.channel.send("Registration cancelled.")
                             return
 
                         default:
@@ -204,127 +211,6 @@ class RegisterNation {
                 msg.channel.send("This server hasn't been set up with us yet! Contact an admin and get them to run the command \"" + config.prefix + "init\".")
                 return
             }
-        })
-    }
-
-    static sendApplicationToModReviewChannel(guildID, applicationDbRef, db, mapgameBotUtilFunctions, listOfFieldsForRegistration) {
-        var applicationEmbed
-
-        this.constructApplicationReviewEmbed(applicationDbRef, mapgameBotUtilFunctions, listOfFieldsForRegistration).then(embed => {
-            applicationEmbed = embed
-
-            var ref = db.ref("discord-servers/" + guildID + "/config/channelToSendApplicationsToID")
-            ref.once("value", (snapshot) => {
-                var channelToSendApplicationEmbedTo = mapgameBotUtilFunctions.getChannelFromMention("<#" + snapshot.val() + ">")
-
-                var ref2 = db.ref("discord-servers/" + guildID + "/config/roleRequiredToProcessApplicationsID")
-                ref2.once("value", (snapshot1) => {
-                    var roleNeededID = snapshot1.val()
-
-                    channelToSendApplicationEmbedTo.send(applicationEmbed).then(message => {
-                        applicationDbRef.child("status").on("value", (snapshot2) => {
-                            message.edit(applicationEmbed.spliceFields(listOfFieldsForRegistration.length, 1, { name: "Status:", value: snapshot2.val() }))
-
-                            var client = mapgameBotUtilFunctions.client
-                            var guildName = client.guilds.cache.find(guild => guild.id == guildID).name
-
-                            switch (snapshot2.val()) {
-                                case "accepted":
-                                    client.users.cache.find(user => user.id == applicationDbRef.key).send("Your nation application for the server \"" + guildName + "\" has been accepted!")
-
-                                    var ref3 = db.ref("discord-servers/" + guildID + "/config")
-                                    ref3.once("value", (snapshot3) => {
-                                        applicationDbRef.once("value", (snapshot4) => {
-                                            if (snapshot3.val().nicknameTemplate != "skip") {
-                                                message.guild.members.cache.find(member => member.id == applicationDbRef.key).setNickname(mapgameBotUtilFunctions.replaceTemplateWithFieldValues(snapshot3.val().nicknameTemplate, listOfFieldsForRegistration, snapshot4.val().fields)).catch(error => console.log(error))
-                                            }
-
-                                            if (snapshot3.val().channelTemplate != "skip") {
-                                                var channelName = mapgameBotUtilFunctions.replaceTemplateWithFieldValues(snapshot3.val().channelTemplate, listOfFieldsForRegistration, snapshot4.val().fields)
-                                                message.guild.channels.create(channelName).then(channel => {
-                                                    channel.setParent(message.guild.channels.cache.find(channel => channel.name.toLowerCase() == snapshot3.val().channelCategory).id)
-                                                })
-                                            }
-
-                                            var nationJSONObject = { fields: {} }
-                                            nationJSONObject.fields = snapshot4.val().fields
-                                            nationJSONObject.mapClaimCode = snapshot4.val().mapClaimCode
-                                            var ref4 = db.ref("discord-servers/" + guildID + "/nations")
-                                            ref4.update({
-                                                [applicationDbRef.key]: nationJSONObject
-                                            })
-                                        })
-                                    })
-                                    break;
-
-                                case "rejected":
-                                    client.users.cache.find(user => user.id == applicationDbRef.key).send("Your nation application for the server \"" + guildName + "\" has been rejected.")
-                                    break;
-
-                                default:
-                                    break;
-                            }
-                        })
-
-                        message.react("✅")
-                        message.react("❎")
-
-                        var filter = (_reaction, user) => {
-                            return message.guild.members.cache.find(member => member.id == user.id).roles.cache.find(role => role.id == roleNeededID)
-                        }
-                        var collector = message.createReactionCollector(filter)
-
-                        collector.on("collect", (reaction, user) => {
-                            switch (reaction.emoji.name) {
-                                case "✅":
-                                    applicationDbRef.child("lastAcceptedBy").set(user.id)
-                                    applicationDbRef.child("status").set("accepted")
-                                    break;
-
-                                case "❎":
-                                    applicationDbRef.child("lastRejectedBy").set(user.id)
-                                    applicationDbRef.child("status").set("rejected")
-                                    break;
-
-                                default:
-                                    break;
-                            }
-
-                            var userReactions = message.reactions.cache.filter(reaction => reaction.users.cache.has(user.id))
-                            for (var reaction1 of userReactions.values()) {
-                                reaction1.users.remove(user.id)
-                            }
-                        })
-                    })
-                })
-            })
-        })
-    }
-
-    static async constructApplicationReviewEmbed(applicationDbRef, mapgameBotUtilFunctions, listOfFieldsForRegistration) {
-        var Discord = require("discord.js")
-
-        var embed = new Discord.MessageEmbed()
-            .setTitle("Nation application from " + mapgameBotUtilFunctions.getUserFromMention("<@" + applicationDbRef.key + ">").username)
-
-        return new Promise((resolve, reject) => {
-            applicationDbRef.once("value", (snapshot) => {
-                listOfFieldsForRegistration.forEach(fieldName => {
-                    embed.addField(fieldName, snapshot.val().fields[fieldName])
-                });
-
-                embed.addField("Status", snapshot.val().status)
-
-                mapgameBotUtilFunctions.generateMapFromMapCode(snapshot.val().mapClaimCode).then(mapPath => {
-                    embed.attachFiles([mapPath])
-
-                    embed.addField("Map claim", "See attached image")
-
-                    embed.setFooter("If you are a mod, use the reactions below to accept or reject this application.")
-
-                    resolve(embed)
-                })
-            })
         })
     }
 }

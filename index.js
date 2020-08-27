@@ -11,7 +11,6 @@ admin.initializeApp({
 var db = admin.database()
 
 var MapgameBotUtilFunctions = require("./modules/MapgameBotUtilFunctions.js")
-var ServerInitSetup = require("./modules/ServerInitSetup.js")
 var RegisterNation = require("./modules/RegisterNation.js")
 
 client.on("ready", () => {
@@ -20,7 +19,7 @@ client.on("ready", () => {
 
 client.on("guildCreate", guild => {
     var defaultChannel = "";
-    guild.channels.forEach(channel => {
+    guild.channels.cache.array().forEach(channel => {
         if (channel.type == "text" && defaultChannel == "") {
             if (channel.permissionsFor(guild.me).has("SEND_MESSAGES")) {
                 defaultChannel = channel;
@@ -101,14 +100,28 @@ function handleCommand(msg, command, args) {
                 break;
             }
 
-            var checkKey = MapgameBotUtilFunctions.makeCheckKey(5)
-            var url = `https://mapgamehostingwebsite20200827111104.azurewebsites.net/Create/DiscordServerSetup?guildID=${guildID}&userID=${msg.author.id}&checkKey=${checkKey}`
+            db.ref("discord-servers/" + guildID + "/config/setupComplete").once("value", (snapshot) => {
+                if (snapshot.val() == "yes") {
+                    msg.channel.send("This server is alerady set up! Type \"" + config.prefix + "uninit\" to uninitialise it.")
+                } else {
+                    var checkKey = MapgameBotUtilFunctions.makeCheckKey(5)
+                    var url = `https://mapgamehostingwebsite20200827111104.azurewebsites.net/Create/DiscordServerSetup?guildID=${guildID}&userID=${msg.author.id}&checkKey=${checkKey}`
 
-            var ref = db.ref("discord-check-keys/" + msg.author.id + "/create-guild")
-            ref.set(guildID + "|" + checkKey)
+                    var ref = db.ref("discord-check-keys/" + msg.author.id + "/create-guild")
+                    ref.set(guildID + "|" + checkKey)
 
-            msg.channel.send("Check your DMs!")
-            msg.author.send("Click the link below to setup your server:\n\n" + url)
+                    msg.channel.send("Check your DMs!")
+                    msg.author.send("Click the link below to setup your server:\n" + url)
+
+                    db.ref("discord-servers/" + guildID + "/config/categoryToAddNationChannelsToID").on("value", (snapshot) => {
+                        try {
+                            client.guilds.cache.get(guildID).channels.cache.get(snapshot.val()).updateOverwrite(client.user, { MANAGE_CHANNELS: true })
+                        } catch {
+
+                        }
+                    })
+                }
+            })
             break;
 
         case "rn":
@@ -168,17 +181,11 @@ function handleCommand(msg, command, args) {
                     })
                 }
             })
+            break;
 
-            /*
-            const exampleEmbed = new Discord.MessageEmbed()
-                .setColor("#009900")
-                .setTitle("Statistics")
-                .setDescription("Statistics about countries in the mapgame.")
-                .addFields({ name: "Countries:", value: listOfNations })
-            msg.channel.send(exampleEmbed).then(embedMsg => {
-                embedMsg.react("1️⃣").then(() => embedMsg.react("2️⃣").then(() => embedMsg.react("3️⃣").then(() => embedMsg.react("4️⃣").then(() => embedMsg.react("5️⃣")))))
-            })
-            */
+        case "ap":
+        case "adminpanel":
+            msg.channel.send("https://mapgamehostingwebsite20200827111104.azurewebsites.net/Admin/Discord?mapgameID=" + guildID)
             break;
 
         default:

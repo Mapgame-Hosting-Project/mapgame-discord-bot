@@ -40,9 +40,14 @@ fetch("res/colours with coords.json").then(response => response.json()).then(col
     })
     document.getElementById("copy-button").addEventListener("click", () => {
         document.querySelector("#map-code-text-input").value = document.querySelector("#map-code-text-input").value.substring(0, document.querySelector("#map-code-text-input").value.length - 1)
-        document.querySelector("#map-code-text-input").select()
-        document.execCommand("copy")
-        alert("Copied map claim code!")
+        var a = document.createElement("a")
+        document.body.appendChild(a)
+        a.style = "display: none"
+        var file = new Blob([document.querySelector("#map-code-text-input").value], { type: "text/plain" })
+        a.href = window.URL.createObjectURL(file)
+        a.download = "map_claim_code.txt"
+        a.click()
+        window.URL.revokeObjectURL(url)
         document.querySelector("#map-code-text-input").value += ","
     })
     document.getElementById("colour-input").addEventListener("change", (event) => {
