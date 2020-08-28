@@ -188,6 +188,25 @@ function handleCommand(msg, command, args) {
             msg.channel.send("https://mapgamehostingwebsite20200827111104.azurewebsites.net/Admin/Discord?mapgameID=" + guildID)
             break;
 
+        case "reset-nicknames":
+            if (!msg.member.hasPermission("ADMINISTRATOR")) {
+                msg.channel.send("You do not have the correct permissions to use this command. Ask an admin to help you out.")
+                break;
+            }
+
+            msg.channel.send("Resetting nicknames...this may take a while...")
+            client.guilds.cache.get(guildID).members.cache.array().forEach(member => {
+                if (!member.hasPermission("ADMINISTRATOR")) {
+                    member.setNickname(member.user.username)
+                }
+            });
+            msg.channel.send("Nicknames reset!")
+            break;
+
+        case "debug-command-1":
+            RegisterNation.setupFirebaseValueChecksForNationApplications(db, client, guildID)
+            break;
+
         default:
             break;
     }

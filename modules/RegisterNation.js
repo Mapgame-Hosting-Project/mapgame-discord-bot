@@ -6,6 +6,7 @@ class RegisterNation {
         this.config = config
         this.db = db
         this.guildID = guildID
+        this.request = require("request")
     }
 
     start(msg) {
@@ -130,16 +131,24 @@ class RegisterNation {
                                                             case 1:
                                                                 cMsg.channel.send("Generating map claim preview... (this may take a while)")
 
-                                                                this.mapgameBotUtilFunctions.generateMapFromMapCode(cMsg.content).then(mapPath => {
-                                                                    if (mapPath == "error parsing map code") {
-                                                                        mapClaimCollector.collected.delete(mapClaimCollector.collected.lastKey())
+                                                                var parentThis = this
 
-                                                                        cMsg.channel.send("Invalid map code. Send another map claim code from the website (https://phyrik.github.io/mapgame-discord-bot/map-province-picker.html).")
+                                                                this.request.get(cMsg.attachments.array()[0].url, function(error, response, body) {
+                                                                    if (!error && response.statusCode == 200) {
+                                                                        var mapClaimCode = body
 
-                                                                        return
+                                                                        parentThis.mapgameBotUtilFunctions.generateMapFromMapCode(mapClaimCode).then(mapPath => {
+                                                                            if (mapPath == "error parsing map code") {
+                                                                                mapClaimCollector.collected.delete(mapClaimCollector.collected.lastKey())
+
+                                                                                cMsg.channel.send("Invalid map code. Send another map claim code from [the website](https://phyrik.github.io/mapgame-discord-bot/map-province-picker.html).")
+
+                                                                                return
+                                                                            }
+
+                                                                            cMsg.channel.send("Is this claim ok? (yes/no)", { files: [mapPath] })
+                                                                        })
                                                                     }
-
-                                                                    cMsg.channel.send("Is this claim ok? (yes/no)", { files: [mapPath] })
                                                                 })
                                                                 break;
 
@@ -211,6 +220,36 @@ class RegisterNation {
                 msg.channel.send("This server hasn't been set up with us yet! Contact an admin and get them to run the command \"" + config.prefix + "init\".")
                 return
             }
+        })
+    }
+
+    static setupFirebaseValueChecksForNationApplications(db, client, guildID) {
+        var ref = db.ref("discord-servers/" + guildID + "/nationApplications")
+        ref.once("value", (snapshot) => {
+            Object.keys(snapshot.val()).forEach(userID => {
+                db.ref("discord-servers/" + guildID + "/nationApplications/" + userID + "/status").on("value", (snapshot) => {
+                    switch (snapshot.val()) {
+                        case "accepted":
+
+                            break;
+
+                        case "pendingApproval":
+
+                            break;
+
+                        case "cancelled":
+                            // do nothing
+                            break;
+
+                        case "rejected":
+                            client.users.cache.find(user => user.id === userID).send("Your nation application for the server \"" + client.guilds.cache.get(guildID).name + "\" has been rejected.")
+                            break;
+
+                        default:
+                            break;
+                    }
+                })
+            })
         })
     }
 }
