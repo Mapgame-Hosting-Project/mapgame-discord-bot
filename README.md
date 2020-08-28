@@ -2,7 +2,7 @@
 
 ## A bot to help you with your mapgame server. <!-- omit in toc -->
 
-This bot is to be used in conjunction with the [Mapgame Hosting Website](https://mapgamehostingwebsite20200827111104.azurewebsites.net/)
+This bot is to be used in conjunction with the [Mapgame Hosting Website](https://github.com/Phyrik/mapgame-hosting-website/)
 
 ### DISCLAIMER: this bot is still WIP, so I would advise against adding it to your server as of now
 
