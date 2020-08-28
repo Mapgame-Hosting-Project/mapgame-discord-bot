@@ -223,18 +223,39 @@ class RegisterNation {
         })
     }
 
-    static setupFirebaseValueChecksForNationApplications(db, client, guildID) {
+    static setupFirebaseValueChecksForNationApplicationsAndNationCreation(db, client, guildID, mapgameBotUtilFunctions) {
         var ref = db.ref("discord-servers/" + guildID + "/nationApplications")
         ref.once("value", (snapshot) => {
             Object.keys(snapshot.val()).forEach(userID => {
                 db.ref("discord-servers/" + guildID + "/nationApplications/" + userID + "/status").on("value", (snapshot) => {
                     switch (snapshot.val()) {
                         case "accepted":
+                            client.users.cache.get(userID).send("Your nation application for the server \"" + client.guilds.cache.get(guildID).name + "\" has been accepted!")
 
+                            db.ref("discord-servers/" + guildID + "/config").once("value", (snapshot1) => {
+                                db.ref("discord-servers/" + guildID + "/nationApplications/" + userID).once("value", (snapshot2) => {
+                                    if (snapshot1.val().nicknameTemplate) {
+                                        client.guilds.cache.get(guildID).members.cache.get(userID).setNickname(mapgameBotUtilFunctions.replaceTemplateWithFieldValues(snapshot1.val().nicknameTemplate, snapshot1.val().listOfFieldsForRegistration, snapshot2.val().fields)).catch(error => console.log(error))
+                                    }
+                                    if (snapshot1.val().channelTemplate) {
+                                        var channelName = mapgameBotUtilFunctions.replaceTemplateWithFieldValues(snapshot1.val().channelTemplate, snapshot1.val().listOfFieldsForRegistration, snapshot2.val().fields)
+                                        client.guilds.cache.get(guildID).channels.create(channelName).then(channel => {
+                                            channel.setParent(client.guilds.cache.get(guildID).channels.cache.get(snapshot1.val().categoryToAddNationChannelsToID))
+                                            channel.send()
+                                        })
+                                    }
+
+                                    db.ref("discord-servers/" + guildID + "/nations").update({
+                                        [userID]: snapshot2.val()
+                                    })
+
+                                    db.ref("discord-servers/" + guildID + "/nations/" + userID + "/status").update("active")
+                                })
+                            })
                             break;
 
                         case "pendingApproval":
-
+                            // do nothing
                             break;
 
                         case "cancelled":
@@ -250,6 +271,11 @@ class RegisterNation {
                     }
                 })
             })
+        })
+
+        var ref1 = db.ref("discord-servers/" + guildID + "/nations")
+        ref1.on("value", (snapshot) => {
+
         })
     }
 }

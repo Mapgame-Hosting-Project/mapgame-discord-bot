@@ -204,7 +204,7 @@ function handleCommand(msg, command, args) {
             break;
 
         case "debug-command-1":
-            RegisterNation.setupFirebaseValueChecksForNationApplications(db, client, guildID)
+            RegisterNation.setupFirebaseValueChecksForNationApplicationsAndNationCreation(db, client, guildID, new MapgameBotUtilFunctions(client))
             break;
 
         default:
