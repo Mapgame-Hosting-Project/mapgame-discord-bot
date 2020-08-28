@@ -173,12 +173,16 @@ class RegisterNation {
                                                             return
                                                         }
 
-                                                        formJSONObject["mapClaimCode"] = collected.array()[0].content
+                                                        var parentThis = this
 
-                                                        var ref = this.db.ref("discord-servers/" + this.guildID + "/nationApplications/" + msg.member.id)
-                                                        ref.update(formJSONObject)
+                                                        this.request.get(collected.array()[0].attachments.array()[0].url, function(error, response, body) {
+                                                            formJSONObject["mapClaimCode"] = body
 
-                                                        collected.array()[0].channel.send("Done! Your registration form is now submitted. To cancel it, type \"" + this.config.prefix + "cancel-registration\".")
+                                                            var ref = parentThis.db.ref("discord-servers/" + parentThis.guildID + "/nationApplications/" + msg.member.id)
+                                                            ref.update(formJSONObject)
+
+                                                            collected.array()[0].channel.send("Done! Your registration form is now submitted. To cancel it, type \"" + parentThis.config.prefix + "cancel-registration\".")
+                                                        })
                                                     })
                                                     break;
 
