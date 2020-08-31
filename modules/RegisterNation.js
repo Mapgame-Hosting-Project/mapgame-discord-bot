@@ -228,6 +228,7 @@ class RegisterNation {
     }
 
     static setupFirebaseValueChecksForNationApplicationsAndNationCreation(db, client, guildID, mapgameBotUtilFunctions) {
+        const Discord = require("discord.js")
         var ref = db.ref("discord-servers/" + guildID + "/nationApplications")
         ref.once("value", (snapshot) => {
             Object.keys(snapshot.val()).forEach(userID => {
@@ -245,7 +246,21 @@ class RegisterNation {
                                         var channelName = mapgameBotUtilFunctions.replaceTemplateWithFieldValues(snapshot1.val().channelTemplate, snapshot1.val().listOfFieldsForRegistration, snapshot2.val().fields)
                                         client.guilds.cache.get(guildID).channels.create(channelName).then(channel => {
                                             channel.setParent(client.guilds.cache.get(guildID).channels.cache.get(snapshot1.val().categoryToAddNationChannelsToID))
-                                            channel.send()
+
+                                            var nationEmbed = new Discord.MessageEmbed()
+                                                .setTitle("Owner: " + client.users.cache.get(userID).username + "#" + client.users.cache.get(userID).discriminator)
+                                            snapshot1.val().listOfFieldsForRegistration.forEach(fieldName => {
+                                                nationEmbed.addField(fieldName, snapshot2.val().fields[fieldName])
+                                            });
+                                            mapgameBotUtilFunctions.generateMapFromMapCode(snapshot2.val().mapClaimCode).then((mapPath) => {
+                                                if (snapshot1.val().customOrIrlNation == "custom") {
+                                                    nationEmbed.addField("Map Claim", "See attached image")
+
+                                                    nationEmbed.files.push(mapPath)
+                                                }
+
+                                                channel.send(nationEmbed)
+                                            })
                                         })
                                     }
 
@@ -253,7 +268,7 @@ class RegisterNation {
                                         [userID]: snapshot2.val()
                                     })
 
-                                    db.ref("discord-servers/" + guildID + "/nations/" + userID + "/status").update("active")
+                                    db.ref("discord-servers/" + guildID + "/nations/" + userID + "/status").set("active")
                                 })
                             })
                             break;

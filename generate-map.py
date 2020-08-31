@@ -12,7 +12,6 @@ def hexToRGBList(hexCode):
 
 def parseMapCode(code):
     try:
-        finalCodeList = []
         codeList1 = code.split(",")
         codeList2 = []
         for code in codeList1:

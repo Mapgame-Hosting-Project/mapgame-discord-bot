@@ -105,7 +105,7 @@ function handleCommand(msg, command, args) {
                     msg.channel.send("This server is alerady set up! Type \"" + config.prefix + "uninit\" to uninitialise it.")
                 } else {
                     var checkKey = MapgameBotUtilFunctions.makeCheckKey(5)
-                    var url = `https://mapgamehostingwebsite20200827111104.azurewebsites.net/Create/DiscordServerSetup?guildID=${guildID}&userID=${msg.author.id}&checkKey=${checkKey}`
+                    var url = `http://mapgamehostingwebsite-prod.eu-west-2.elasticbeanstalk.com/Create/DiscordServerSetup?guildID=${guildID}&userID=${msg.author.id}&checkKey=${checkKey}`
 
                     var ref = db.ref("discord-check-keys/" + msg.author.id + "/create-guild")
                     ref.set(guildID + "|" + checkKey)
@@ -185,7 +185,7 @@ function handleCommand(msg, command, args) {
 
         case "ap":
         case "adminpanel":
-            msg.channel.send("https://mapgamehostingwebsite20200827111104.azurewebsites.net/Admin/Discord?mapgameID=" + guildID)
+            msg.channel.send("http://mapgamehostingwebsite-prod.eu-west-2.elasticbeanstalk.com/Admin/Discord?mapgameID=" + guildID)
             break;
 
         case "reset-nicknames":
