@@ -103,6 +103,8 @@ class RegisterNation {
 
                                         var serverTypeCheckRef = this.db.ref("discord-servers/" + this.guildID + "/config/customOrIrlNation")
                                         serverTypeCheckRef.once("value", (snapshot) => {
+                                            console.log(snapshot.val())
+
                                             switch (snapshot.val()) {
                                                 case "custom":
                                                     // ask for map claim, then submit form
@@ -133,23 +135,29 @@ class RegisterNation {
 
                                                                 var parentThis = this
 
-                                                                this.request.get(cMsg.attachments.array()[0].url, function(error, response, body) {
-                                                                    if (!error && response.statusCode == 200) {
-                                                                        var mapClaimCode = body
+                                                                try {
+                                                                    this.request.get(cMsg.attachments.array()[0].url, function(error, response, body) {
+                                                                        if (!error && response.statusCode == 200) {
+                                                                            var mapClaimCode = body
 
-                                                                        parentThis.mapgameBotUtilFunctions.generateMapFromMapCode(mapClaimCode).then(mapPath => {
-                                                                            if (mapPath == "error parsing map code") {
-                                                                                mapClaimCollector.collected.delete(mapClaimCollector.collected.lastKey())
+                                                                            parentThis.mapgameBotUtilFunctions.generateMapFromMapCode(mapClaimCode).then(mapPath => {
+                                                                                if (mapPath == "error parsing map code") {
+                                                                                    mapClaimCollector.collected.delete(mapClaimCollector.collected.lastKey())
 
-                                                                                cMsg.channel.send("Invalid map code. Send another map claim code from [the website](https://phyrik.github.io/mapgame-discord-bot/map-province-picker.html).")
+                                                                                    cMsg.channel.send("Invalid map code. Send another map claim code from [the website](https://phyrik.github.io/mapgame-discord-bot/map-province-picker.html).")
 
-                                                                                return
-                                                                            }
+                                                                                    return
+                                                                                }
 
-                                                                            cMsg.channel.send("Is this claim ok? (yes/no)", { files: [mapPath] })
-                                                                        })
-                                                                    }
-                                                                })
+                                                                                cMsg.channel.send("Is this claim ok? (yes/no)", { files: [mapPath] })
+                                                                            })
+                                                                        }
+                                                                    })
+                                                                } catch {
+                                                                    mapClaimCollector.collected.delete(mapClaimCollector.collected.lastKey())
+
+                                                                    cMsg.channel.send("Invalid map code. Send another map claim code from [the website](https://phyrik.github.io/mapgame-discord-bot/map-province-picker.html). Make sure it is in a file.")
+                                                                }
                                                                 break;
 
                                                             case 2:
@@ -177,6 +185,8 @@ class RegisterNation {
 
                                                         this.request.get(collected.array()[0].attachments.array()[0].url, function(error, response, body) {
                                                             formJSONObject["mapClaimCode"] = body
+                                                            var dateTimeNow = new Date()
+                                                            formJSONObject["lastMapClaimTime"] = `${dateTimeNow.getFullYear()}/${dateTimeNow.getMonth().toString().padStart(2, "0")}/${dateTimeNow.getDate().toString().padStart(2, "0")}/${dateTimeNow.getHours().toString().padStart(2, "0")}/${dateTimeNow.getMinutes().toString().padStart(2, "0")}`
 
                                                             var ref = parentThis.db.ref("discord-servers/" + parentThis.guildID + "/nationApplications/" + msg.member.id)
                                                             ref.update(formJSONObject)
@@ -290,11 +300,6 @@ class RegisterNation {
                     }
                 })
             })
-        })
-
-        var ref1 = db.ref("discord-servers/" + guildID + "/nations")
-        ref1.on("value", (snapshot) => {
-
         })
     }
 }

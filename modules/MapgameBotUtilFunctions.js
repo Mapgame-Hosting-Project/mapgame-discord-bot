@@ -42,14 +42,18 @@ class MapgameBotUtilFunctions {
         }
     }
 
-    async generateMapFromMapCode(code) {
+    async generateMapFromMapCode(code, getNumberOfTiles = false) {
         var spawn = this.childProcess.spawn
         var pythonProcess = spawn("python", ["generate-map.py", code])
 
         return new Promise((resolve, reject) => {
             pythonProcess.stdout.on("data", data => {
                 console.log(data.toString())
-                resolve(data.toString().replace(/\r?\n|\r/g, ""))
+                if (getNumberOfTiles) {
+                    resolve(data.toString().replace(/\r?\n|\r/g, "").split("|"))
+                }
+                console.log(data.toString().replace(/\r?\n|\r/g, ""))
+                resolve(data.toString().replace(/\r?\n|\r/g, "").split("|")[0])
             })
         })
     }

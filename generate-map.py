@@ -34,6 +34,7 @@ def generateImageFileName():
         return filenameToCheck
     
 mapCodeList = parseMapCode(sys.argv[1])
+numberOfTilesNotBlank = len(mapCodeList)
 
 image = Image.open("mapImages/epic-map.png").convert("RGBA")
 
@@ -42,5 +43,5 @@ for fill in mapCodeList:
 
 imageFilenameAndPath = "mapImages/" + generateImageFileName()
 image.save(imageFilenameAndPath)
-print(imageFilenameAndPath)
+print(imageFilenameAndPath + "|" + str(numberOfTilesNotBlank))
 sys.stdout.flush()

@@ -15,6 +15,10 @@ var RegisterNation = require("./modules/RegisterNation.js")
 
 client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}!`)
+
+    client.guilds.cache.array().forEach(guild => {
+        RegisterNation.setupFirebaseValueChecksForNationApplicationsAndNationCreation(db, client, guild.id, new MapgameBotUtilFunctions(client))
+    });
 })
 
 client.on("guildCreate", guild => {
@@ -29,6 +33,8 @@ client.on("guildCreate", guild => {
 
     defaultChannel.send("Hello! To start linking your server with the bot and website, type \"" + config.prefix + "init\". Also, make sure to have my role (which should be 'Mapgame Bot') at the top of your server's role list in your server's settings or else I won't work!")
 })
+
+
 
 /*
 client.on("guildMemberAdd", member => {
@@ -105,7 +111,7 @@ function handleCommand(msg, command, args) {
                     msg.channel.send("This server is alerady set up! Type \"" + config.prefix + "uninit\" to uninitialise it.")
                 } else {
                     var checkKey = MapgameBotUtilFunctions.makeCheckKey(5)
-                    var url = `http://mapgamehostingwebsite-prod.eu-west-2.elasticbeanstalk.com/Create/DiscordServerSetup?guildID=${guildID}&userID=${msg.author.id}&checkKey=${checkKey}`
+                    var url = `http://mapgame-hosting.crumble-technologies.co.uk//Create/DiscordServerSetup?guildID=${guildID}&userID=${msg.author.id}&checkKey=${checkKey}`
 
                     var ref = db.ref("discord-check-keys/" + msg.author.id + "/create-guild")
                     ref.set(guildID + "|" + checkKey)
@@ -185,7 +191,7 @@ function handleCommand(msg, command, args) {
 
         case "ap":
         case "adminpanel":
-            msg.channel.send("http://mapgamehostingwebsite-prod.eu-west-2.elasticbeanstalk.com/Admin/Discord?mapgameID=" + guildID)
+            msg.channel.send("http://mapgame-hosting.crumble-technologies.co.uk//Admin/Discord?mapgameID=" + guildID)
             break;
 
         case "reset-nicknames":
@@ -203,8 +209,56 @@ function handleCommand(msg, command, args) {
             msg.channel.send("Nicknames reset!")
             break;
 
-        case "debug-command-1":
-            RegisterNation.setupFirebaseValueChecksForNationApplicationsAndNationCreation(db, client, guildID, new MapgameBotUtilFunctions(client))
+        case "c":
+        case "claim":
+        case "map-claim":
+            db.ref("discord-servers/" + guildID + "/nations/" + msg.author.id).once("value", (snapshot) => {
+                if (snapshot.val() == null) {
+                    msg.channel.send("You don't own a nation yet! Type \"" + config.prefix + "register\" to register one.")
+                } else {
+                    msg.channel.send("Processing map claim... please wait")
+
+                    new MapgameBotUtilFunctions(client).generateMapFromMapCode(args[0], true).then(mapPathAndNumberOfTiles => {
+                        mapPath = mapPathAndNumberOfTiles[0]
+                        numberOfTiles = mapPathAndNumberOfTiles[1]
+
+                        // datetime format in database: yyyy/mm/dd/hh/MM
+
+                        var dateTimeNow = new Date()
+                        var dateTimeLast = new Date(snapshot.val().lastMapClaimTime.slice(0, 4), snapshot.val().lastMapClaimTime.slice(5, 7), snapshot.val().lastMapClaimTime.slice(8, 10), snapshot.val().lastMapClaimTime.slice(11, 13), snapshot.val().lastMapClaimTime.slice(14, 16))
+                        var hoursDifference = Math.abs(dateTimeNow = dateTimeLast) / 36e5
+
+                        db.ref("discord-servers/" + guildID + "/config/numberOfTilesToClaimEachDay").once("value", (snapshot2) => {
+                            if (hoursDifference < 24) {
+                                msg.channel.send("You have already submitted a map claim in the past 24 hours! Please try again later.")
+                            } else if (parseInt(numberOfTiles) > parseInt(snapshot2.val())) {
+                                msg.channel.send("There are too many tiles in that claim! Please try again.")
+                            } else {
+                                if (mapPath == "error parsing map code") {
+                                    msg.channel.send("Invalid map code. Type the command again to try again.")
+
+                                    return
+                                } else {
+                                    var dateTimeNow = new Date()
+                                    msg.channel.send("Sending map code to database...")
+
+                                    console.log(`${dateTimeNow.getFullYear()}/${dateTimeNow.getMonth().toString().padStart(2, "0")}/${dateTimeNow.getDate().toString().padStart(2, "0")}/${dateTimeNow.getHours().toString().padStart(2, "0")}/${dateTimeNow.getMinutes().toString().padStart(2, "0")}`)
+                                    db.ref("discord-servers/" + guildID + "/nations/" + msg.author.id).update({
+                                        "mapClaimCode": snapshot.val().mapClaimCode + args[0],
+                                        "lastMapClaimTime": `${dateTimeNow.getFullYear()}/${dateTimeNow.getMonth().toString().padStart(2, "0")}/${dateTimeNow.getDate().toString().padStart(2, "0")}/${dateTimeNow.getHours().toString().padStart(2, "0")}/${dateTimeNow.getMinutes().toString().padStart(2, "0")}`
+                                    }).then(() => {
+                                        msg.channel.send("Done! Map claim processed.")
+                                    })
+                                }
+                            }
+                        })
+                    })
+                }
+            })
+            break;
+
+        case "bot-init":
+
             break;
 
         default:
