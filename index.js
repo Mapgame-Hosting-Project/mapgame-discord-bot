@@ -1,44 +1,11 @@
-const Discord = require("discord.js")
-const client = new Discord.Client()
+const mhp = require("mapgame-hosting-project")
 const config = require("./config.json")
 
-var admin = require("firebase-admin")
-var serviceAccount = require(config.firebase_token_path)
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: "https://mapgame-discord-bot.firebaseio.com/"
-})
-var db = admin.database()
-
-var MapgameBotUtilFunctions = require("./modules/MapgameBotUtilFunctions.js")
-var RegisterNation = require("./modules/RegisterNation.js")
-
-client.on("ready", () => {
-    console.log(`Logged in as ${client.user.tag}!`)
-
-    client.guilds.cache.array().forEach(guild => {
-        RegisterNation.setupFirebaseValueChecksForNationApplicationsAndNationCreation(db, client, guild.id, new MapgameBotUtilFunctions(client))
-    });
-})
-
-client.on("guildCreate", guild => {
-    var defaultChannel = "";
-    guild.channels.cache.array().forEach(channel => {
-        if (channel.type == "text" && defaultChannel == "") {
-            if (channel.permissionsFor(guild.me).has("SEND_MESSAGES")) {
-                defaultChannel = channel;
-            }
-        }
-    })
-
-    defaultChannel.send("Hello! To start linking your server with the bot and website, type \"" + config.prefix + "init\". Also, make sure to have my role (which should be 'Mapgame Bot') at the top of your server's role list in your server's settings or else I won't work!")
-})
-
-
+const mapgameClient = new mhp.MapgameClient(config.token, config.firebase_token_path)
 
 /*
-client.on("guildMemberAdd", member => {
-    var ref = db.ref("discord-servers/" + member.guild.id + "/config")
+mapgameClient.discordClient.on("guildMemberAdd", member => {
+    var ref = mapgameClient.db.ref("discord-servers/" + member.guild.id + "/config")
     ref.once("value", (snapshot) => {
         var welcomeChannelID = snapshot.val().welcomeChannelID
         var autoRoleRoleID = snapshot.val().autoRoleRoleID
@@ -54,7 +21,7 @@ client.on("guildMemberAdd", member => {
 })
 */
 
-client.on("message", msg => {
+mapgameClient.discordClient.on("message", msg => {
     if (!msg.content.startsWith(config.prefix) || msg.author.bot) {
         return
     }
@@ -87,10 +54,10 @@ function handleCommand(msg, command, args) {
                 break;
             }
 
-            var ref = db.ref("discord-servers/" + guildID + "/config/setupComplete")
+            var ref = mapgameClient.db.ref("discord-servers/" + guildID + "/config/setupComplete")
             ref.once("value", (snapshot) => {
                 if (snapshot.val() == "yes") {
-                    ref2 = db.ref("discord-servers/" + guildID + "/config")
+                    ref2 = mapgameClient.db.ref("discord-servers/" + guildID + "/config")
                     ref2.remove().then(() => {
                         msg.channel.send("Done! You can now re-initialise the server with \"" + config.prefix + "init\".")
                     })
@@ -106,22 +73,22 @@ function handleCommand(msg, command, args) {
                 break;
             }
 
-            db.ref("discord-servers/" + guildID + "/config/setupComplete").once("value", (snapshot) => {
+            mapgameClient.db.ref("discord-servers/" + guildID + "/config/setupComplete").once("value", (snapshot) => {
                 if (snapshot.val() == "yes") {
                     msg.channel.send("This server is alerady set up! Type \"" + config.prefix + "uninit\" to uninitialise it.")
                 } else {
-                    var checkKey = MapgameBotUtilFunctions.makeCheckKey(5)
+                    var checkKey = mhp.MapgameBotUtilFunctions.makeCheckKey(5)
                     var url = `http://mapgame-hosting.crumble-technologies.co.uk//Create/DiscordServerSetup?guildID=${guildID}&userID=${msg.author.id}&checkKey=${checkKey}`
 
-                    var ref = db.ref("discord-check-keys/" + msg.author.id + "/create-guild")
+                    var ref = mapgameClient.db.ref("discord-check-keys/" + msg.author.id + "/create-guild")
                     ref.set(guildID + "|" + checkKey)
 
                     msg.channel.send("Check your DMs!")
                     msg.author.send("Click the link below to setup your server:\n" + url)
 
-                    db.ref("discord-servers/" + guildID + "/config/categoryToAddNationChannelsToID").on("value", (snapshot) => {
+                    mapgameClient.db.ref("discord-servers/" + guildID + "/config/categoryToAddNationChannelsToID").on("value", (snapshot) => {
                         try {
-                            client.guilds.cache.get(guildID).channels.cache.get(snapshot.val()).updateOverwrite(client.user, { MANAGE_CHANNELS: true })
+                            mapgameClient.discordClient.guilds.cache.get(guildID).channels.cache.get(snapshot.val()).updateOverwrite(mapgameClient.discordClient.user, { MANAGE_CHANNELS: true })
                         } catch {
 
                         }
@@ -133,13 +100,13 @@ function handleCommand(msg, command, args) {
         case "rn":
         case "register":
         case "register-nation":
-            var registerNation = new RegisterNation(db, guildID, new MapgameBotUtilFunctions(client), config)
+            var registerNation = new mhp.RegisterNation(mapgameClient.db, guildID, new mhp.MapgameBotUtilFunctions(mapgameClient.discordClient), config)
             registerNation.start(msg)
             break;
 
         case "cr":
         case "cancel-registration":
-            var ref = db.ref("discord-servers/" + guildID + "/nationApplications/" + msg.member.id)
+            var ref = mapgameClient.db.ref("discord-servers/" + guildID + "/nationApplications/" + msg.member.id)
             ref.update({
                 status: "cancelled"
             })
@@ -149,7 +116,7 @@ function handleCommand(msg, command, args) {
 
         case "stats":
             var listOfNationsKeys = []
-            var ref = db.ref("discord-servers/" + guildID + "/nations")
+            var ref = mapgameClient.db.ref("discord-servers/" + guildID + "/nations")
             ref.once("value", (snapshot) => {
                 if (!snapshot.exists()) {
                     msg.channel.send("No nations found.")
@@ -159,9 +126,9 @@ function handleCommand(msg, command, args) {
                         listOfNationsKeys.push(nationKey)
                     });
 
-                    var mapgameBotUtilFunctions = new MapgameBotUtilFunctions(client)
+                    var mapgameBotUtilFunctions = new mhp.MapgameBotUtilFunctions(mapgameClient.discordClient)
 
-                    var ref2 = db.ref("discord-servers/" + guildID + "/config/listOfFieldsForRegistration")
+                    var ref2 = mapgameClient.db.ref("discord-servers/" + guildID + "/config/listOfFieldsForRegistration")
                     ref2.once("value", (snapshot2) => {
                         var nationsFieldValues = []
                         listOfNationsKeys.forEach(nationKey => {
@@ -201,7 +168,7 @@ function handleCommand(msg, command, args) {
             }
 
             msg.channel.send("Resetting nicknames...this may take a while...")
-            client.guilds.cache.get(guildID).members.cache.array().forEach(member => {
+            mapgameClient.discordClient.guilds.cache.get(guildID).members.cache.array().forEach(member => {
                 if (!member.hasPermission("ADMINISTRATOR")) {
                     member.setNickname(member.user.username)
                 }
@@ -212,13 +179,13 @@ function handleCommand(msg, command, args) {
         case "c":
         case "claim":
         case "map-claim":
-            db.ref("discord-servers/" + guildID + "/nations/" + msg.author.id).once("value", (snapshot) => {
+            mapgameClient.db.ref("discord-servers/" + guildID + "/nations/" + msg.author.id).once("value", (snapshot) => {
                 if (snapshot.val() == null) {
                     msg.channel.send("You don't own a nation yet! Type \"" + config.prefix + "register\" to register one.")
                 } else {
                     msg.channel.send("Processing map claim... please wait")
 
-                    new MapgameBotUtilFunctions(client).generateMapFromMapCode(args[0], true).then(mapPathAndNumberOfTiles => {
+                    new mhp.MapgameBotUtilFunctions(mapgameClient.discordClient).generateMapFromMapCode(args[0], true).then(mapPathAndNumberOfTiles => {
                         mapPath = mapPathAndNumberOfTiles[0]
                         numberOfTiles = mapPathAndNumberOfTiles[1]
 
@@ -228,7 +195,7 @@ function handleCommand(msg, command, args) {
                         var dateTimeLast = new Date(snapshot.val().lastMapClaimTime.slice(0, 4), snapshot.val().lastMapClaimTime.slice(5, 7), snapshot.val().lastMapClaimTime.slice(8, 10), snapshot.val().lastMapClaimTime.slice(11, 13), snapshot.val().lastMapClaimTime.slice(14, 16))
                         var hoursDifference = Math.abs(dateTimeNow = dateTimeLast) / 36e5
 
-                        db.ref("discord-servers/" + guildID + "/config/numberOfTilesToClaimEachDay").once("value", (snapshot2) => {
+                        mapgameClient.db.ref("discord-servers/" + guildID + "/config/numberOfTilesToClaimEachDay").once("value", (snapshot2) => {
                             if (hoursDifference < 24) {
                                 msg.channel.send("You have already submitted a map claim in the past 24 hours! Please try again later.")
                             } else if (parseInt(numberOfTiles) > parseInt(snapshot2.val())) {
@@ -243,7 +210,7 @@ function handleCommand(msg, command, args) {
                                     msg.channel.send("Sending map code to database...")
 
                                     console.log(`${dateTimeNow.getFullYear()}/${dateTimeNow.getMonth().toString().padStart(2, "0")}/${dateTimeNow.getDate().toString().padStart(2, "0")}/${dateTimeNow.getHours().toString().padStart(2, "0")}/${dateTimeNow.getMinutes().toString().padStart(2, "0")}`)
-                                    db.ref("discord-servers/" + guildID + "/nations/" + msg.author.id).update({
+                                    mapgameClient.db.ref("discord-servers/" + guildID + "/nations/" + msg.author.id).update({
                                         "mapClaimCode": snapshot.val().mapClaimCode + args[0],
                                         "lastMapClaimTime": `${dateTimeNow.getFullYear()}/${dateTimeNow.getMonth().toString().padStart(2, "0")}/${dateTimeNow.getDate().toString().padStart(2, "0")}/${dateTimeNow.getHours().toString().padStart(2, "0")}/${dateTimeNow.getMinutes().toString().padStart(2, "0")}`
                                     }).then(() => {
@@ -265,5 +232,3 @@ function handleCommand(msg, command, args) {
             break;
     }
 }
-
-client.login(config.token)
