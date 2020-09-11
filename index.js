@@ -36,7 +36,7 @@ mapgameClient.discordClient.on("message", msg => {
     handleCommand(msg, command, args)
 })
 
-function handleCommand(msg, command, args) {
+async function handleCommand(msg, command, args) {
     var guildID = msg.guild.id
 
     switch (command) {
@@ -78,7 +78,7 @@ function handleCommand(msg, command, args) {
                     msg.channel.send("This server is alerady set up! Type \"" + config.prefix + "uninit\" to uninitialise it.")
                 } else {
                     var checkKey = mhp.MapgameBotUtilFunctions.makeCheckKey(5)
-                    var url = `http://mapgame-hosting.crumble-technologies.co.uk//Create/DiscordServerSetup?guildID=${guildID}&userID=${msg.author.id}&checkKey=${checkKey}`
+                    var url = `http://mapgame-hosting.crumble-technologies.co.uk/Create/DiscordServerSetup?guildID=${guildID}&userID=${msg.author.id}&checkKey=${checkKey}`
 
                     var ref = mapgameClient.db.ref("discord-check-keys/" + msg.author.id + "/create-guild")
                     ref.set(guildID + "|" + checkKey)
@@ -115,50 +115,16 @@ function handleCommand(msg, command, args) {
             break;
 
         case "stats":
-            var listOfNationsKeys = []
-            var ref = mapgameClient.db.ref("discord-servers/" + guildID + "/nations")
-            ref.once("value", (snapshot) => {
-                if (!snapshot.exists()) {
-                    msg.channel.send("No nations found.")
-                    return
-                } else {
-                    Object.keys(snapshot.val()).forEach(nationKey => {
-                        listOfNationsKeys.push(nationKey)
-                    });
-
-                    var mapgameBotUtilFunctions = new mhp.MapgameBotUtilFunctions(mapgameClient.discordClient)
-
-                    var ref2 = mapgameClient.db.ref("discord-servers/" + guildID + "/config/listOfFieldsForRegistration")
-                    ref2.once("value", (snapshot2) => {
-                        var nationsFieldValues = []
-                        listOfNationsKeys.forEach(nationKey => {
-                            var nationValueForField = ""
-                            snapshot2.val().forEach(fieldName => {
-                                nationValueForField += fieldName + ": " + snapshot.val()[nationKey].fields[fieldName] + "\n"
-                            });
-
-                            nationsFieldValues.push({
-                                name: mapgameBotUtilFunctions.getUserFromMention("<@" + snapshot.child(nationKey).key + ">").username,
-                                value: nationValueForField,
-                                inline: true
-                            })
-                        });
-
-                        console.log(nationsFieldValues)
-
-                        var embed = new Discord.MessageEmbed()
-                            .setTitle("List of Nations")
-                            .setColor("#009900")
-                            .addFields(nationsFieldValues)
-                        msg.channel.send(embed)
-                    })
-                }
+            var nationManager = new mhp.NationManager(mapgameClient.db, guildID)
+            nationManager.getAllNationsEmbed(new mhp.MapgameBotUtilFunctions(mapgameClient.discordClient)).then(embed => {
+                console.log(embed)
+                msg.channel.send(embed)
             })
             break;
 
         case "ap":
         case "adminpanel":
-            msg.channel.send("http://mapgame-hosting.crumble-technologies.co.uk//Admin/Discord?mapgameID=" + guildID)
+            msg.channel.send("http://mapgame-hosting.crumble-technologies.co.uk/Admin/Discord?mapgameID=" + guildID)
             break;
 
         case "reset-nicknames":
@@ -179,47 +145,30 @@ function handleCommand(msg, command, args) {
         case "c":
         case "claim":
         case "map-claim":
-            mapgameClient.db.ref("discord-servers/" + guildID + "/nations/" + msg.author.id).once("value", (snapshot) => {
-                if (snapshot.val() == null) {
-                    msg.channel.send("You don't own a nation yet! Type \"" + config.prefix + "register\" to register one.")
-                } else {
-                    msg.channel.send("Processing map claim... please wait")
+            mhp.MapHelper.makeMapClaim(mapgameClient.db, guildID, msg.author.id, args[0]).then(resultStatus => {
+                switch (resultStatus) {
+                    case "success":
+                        msg.channel.send("Map claim successful!")
+                        break;
 
-                    new mhp.MapgameBotUtilFunctions(mapgameClient.discordClient).generateMapFromMapCode(args[0], true).then(mapPathAndNumberOfTiles => {
-                        mapPath = mapPathAndNumberOfTiles[0]
-                        numberOfTiles = mapPathAndNumberOfTiles[1]
+                    case "no-such-nation":
+                        msg.channel.send("You don't have a nation yet. To apply for one, type \"" + config.prefix + "register\".")
+                        break;
 
-                        // datetime format in database: yyyy/mm/dd/hh/MM
+                    case "map-claim-too-soon":
+                        msg.channel.send("You have to wait 24 hours between map claims. Please try later.")
+                        break;
 
-                        var dateTimeNow = new Date()
-                        var dateTimeLast = new Date(snapshot.val().lastMapClaimTime.slice(0, 4), snapshot.val().lastMapClaimTime.slice(5, 7), snapshot.val().lastMapClaimTime.slice(8, 10), snapshot.val().lastMapClaimTime.slice(11, 13), snapshot.val().lastMapClaimTime.slice(14, 16))
-                        var hoursDifference = Math.abs(dateTimeNow = dateTimeLast) / 36e5
+                    case "too-many-tiles":
+                        msg.channel.send("That map claim is too big!")
+                        break;
 
-                        mapgameClient.db.ref("discord-servers/" + guildID + "/config/numberOfTilesToClaimEachDay").once("value", (snapshot2) => {
-                            if (hoursDifference < 24) {
-                                msg.channel.send("You have already submitted a map claim in the past 24 hours! Please try again later.")
-                            } else if (parseInt(numberOfTiles) > parseInt(snapshot2.val())) {
-                                msg.channel.send("There are too many tiles in that claim! Please try again.")
-                            } else {
-                                if (mapPath == "error parsing map code") {
-                                    msg.channel.send("Invalid map code. Type the command again to try again.")
+                    case "invalid-map-code":
+                        msg.channel.send("That map claim code is invalid.")
+                        break;
 
-                                    return
-                                } else {
-                                    var dateTimeNow = new Date()
-                                    msg.channel.send("Sending map code to database...")
-
-                                    console.log(`${dateTimeNow.getFullYear()}/${dateTimeNow.getMonth().toString().padStart(2, "0")}/${dateTimeNow.getDate().toString().padStart(2, "0")}/${dateTimeNow.getHours().toString().padStart(2, "0")}/${dateTimeNow.getMinutes().toString().padStart(2, "0")}`)
-                                    mapgameClient.db.ref("discord-servers/" + guildID + "/nations/" + msg.author.id).update({
-                                        "mapClaimCode": snapshot.val().mapClaimCode + args[0],
-                                        "lastMapClaimTime": `${dateTimeNow.getFullYear()}/${dateTimeNow.getMonth().toString().padStart(2, "0")}/${dateTimeNow.getDate().toString().padStart(2, "0")}/${dateTimeNow.getHours().toString().padStart(2, "0")}/${dateTimeNow.getMinutes().toString().padStart(2, "0")}`
-                                    }).then(() => {
-                                        msg.channel.send("Done! Map claim processed.")
-                                    })
-                                }
-                            }
-                        })
-                    })
+                    default:
+                        break;
                 }
             })
             break;
