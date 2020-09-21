@@ -145,30 +145,18 @@ async function handleCommand(msg, command, args) {
         case "c":
         case "claim":
         case "map-claim":
-            mhp.MapHelper.makeMapClaim(mapgameClient.db, guildID, msg.author.id, args[0]).then(resultStatus => {
-                switch (resultStatus) {
-                    case "success":
-                        msg.channel.send("Map claim successful!")
-                        break;
+            mapgameClient.db.ref("discord-servers/" + guildID + "/nations/" + msg.author.id).once("value", (snapshot) => {
+                if (!snapshot.exists()) {
+                    msg.channel.send("You don't own a nation! Type \"" + config.prefix + "register\" to register for one.")
+                } else {
+                    var checkKey = mhp.MapgameBotUtilFunctions.makeCheckKey(5)
+                    var url = `http://mapgame-hosting.crumble-technologies.co.uk/PlayerActions/MakeMapClaim?mapgameID=${guildID}&nationID=${msg.author.id}&checkKey=${checkKey}`
 
-                    case "no-such-nation":
-                        msg.channel.send("You don't have a nation yet. To apply for one, type \"" + config.prefix + "register\".")
-                        break;
+                    var ref = mapgameClient.db.ref("discord-check-keys/" + msg.author.id + "/map-claim")
+                    ref.set(guildID + "|" + checkKey)
 
-                    case "map-claim-too-soon":
-                        msg.channel.send("You have to wait 24 hours between map claims. Please try later.")
-                        break;
-
-                    case "too-many-tiles":
-                        msg.channel.send("That map claim is too big!")
-                        break;
-
-                    case "invalid-map-code":
-                        msg.channel.send("That map claim code is invalid.")
-                        break;
-
-                    default:
-                        break;
+                    msg.channel.send("Check your DMs!")
+                    msg.author.send("Click the link below to make your map claim:\n" + url)
                 }
             })
             break;
