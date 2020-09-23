@@ -101,7 +101,7 @@ async function handleCommand(msg, command, args) {
         case "register":
         case "register-nation":
             var registerNation = new mhp.RegisterNation(mapgameClient.db, guildID, new mhp.MapgameBotUtilFunctions(mapgameClient.discordClient), config)
-            registerNation.start(msg)
+            registerNation.start(msg, mapgameClient.discordClient)
             break;
 
         case "cr":
