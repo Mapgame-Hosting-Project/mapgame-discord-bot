@@ -75,7 +75,7 @@ async function handleCommand(msg, command, args) {
 
             mapgameClient.db.ref("discord-servers/" + guildID + "/config/setupComplete").once("value", (snapshot) => {
                 if (snapshot.val() == "yes") {
-                    msg.channel.send("This server is alerady set up! Type \"" + config.prefix + "uninit\" to uninitialise it.")
+                    msg.channel.send("This server is already set up! Type \"" + config.prefix + "uninit\" to uninitialise it.")
                 } else {
                     var checkKey = mhp.MapgameBotUtilFunctions.makeCheckKey(5)
                     var url = `http://mapgame-hosting.crumble-technologies.co.uk/Create/DiscordServerSetup?guildID=${guildID}&userID=${msg.author.id}&checkKey=${checkKey}`
@@ -89,9 +89,7 @@ async function handleCommand(msg, command, args) {
                     mapgameClient.db.ref("discord-servers/" + guildID + "/config/categoryToAddNationChannelsToID").on("value", (snapshot) => {
                         try {
                             mapgameClient.discordClient.guilds.cache.get(guildID).channels.cache.get(snapshot.val()).updateOverwrite(mapgameClient.discordClient.user, { MANAGE_CHANNELS: true })
-                        } catch {
-
-                        }
+                        } catch {}
                     })
                 }
             })
@@ -100,8 +98,46 @@ async function handleCommand(msg, command, args) {
         case "rn":
         case "register":
         case "register-nation":
-            var registerNation = new mhp.RegisterNation(mapgameClient.db, guildID, new mhp.MapgameBotUtilFunctions(mapgameClient.discordClient), config)
-            registerNation.start(msg, mapgameClient.discordClient)
+            var ableToContinueRegistration
+
+            var userCheckRef = mapgameClient.db.ref("discord-servers/" + guildID + "/nationApplications/" + msg.member.id + "/status")
+            userCheckRef.once("value", (snapshot) => {
+                switch (snapshot.val()) {
+                    case "accepted":
+                        msg.channel.send("You are already a nation! Ask an admin if you can swap nations or create a new one.")
+                        ableToContinueRegistration = false
+                        break;
+
+                    case "rejected":
+                        msg.channel.send("Bad news: your original application was rejected. Good news: that means you can submit a new one!")
+                        ableToContinueRegistration = true
+                        break;
+
+                    case "pendingApproval":
+                        msg.channel.send("You're old application is still pending...type " + this.config.prefix + "cancel-registration to cancel it, then run this command again.")
+                        ableToContinueRegistration = false
+                        break;
+
+                    case "cancelled":
+                        ableToContinueRegistration = true
+                        break;
+
+                    default:
+                        ableToContinueRegistration = true
+                        break;
+                }
+            })
+
+            if (ableToContinueRegistration) {
+                var checkKey = mhp.MapgameBotUtilFunctions.makeCheckKey(5)
+                var url = `http://mapgame-hosting.crumble-technologies.co.uk/PlayerActions/RegisterNation?mapgameID=${guildID}&discordUserID=${msg.author.id}&checkKey=${checkKey}`
+
+                var ref = mapgameClient.db.ref("discord-check-keys/" + msg.author.id + "/register-nation")
+                ref.set(guildID + "|" + checkKey)
+
+                msg.channel.send("Check your DMs!")
+                msg.author.send("Click the link below to register your nation:\n" + url)
+            }
             break;
 
         case "cr":
@@ -159,10 +195,6 @@ async function handleCommand(msg, command, args) {
                     msg.author.send("Click the link below to make your map claim:\n" + url)
                 }
             })
-            break;
-
-        case "bot-init":
-
             break;
 
         default:
