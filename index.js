@@ -57,8 +57,8 @@ async function handleCommand(msg, command, args) {
             var ref = mapgameClient.db.ref("discord-servers/" + guildID + "/config/setupComplete")
             ref.once("value", (snapshot) => {
                 if (snapshot.val() == "yes") {
-                    ref2 = mapgameClient.db.ref("discord-servers/" + guildID + "/config")
-                    ref2.remove().then(() => {
+                    ref2 = mapgameClient.db.ref("discord-servers/" + guildID + "/config/setupComplete")
+                    ref2.set("no").then(() => {
                         msg.channel.send("Done! You can now re-initialise the server with \"" + config.prefix + "init\".")
                     })
                 } else {
