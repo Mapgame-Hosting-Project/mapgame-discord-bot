@@ -190,14 +190,20 @@ async function handleCommand(msg, command, args) {
                 if (!snapshot.exists()) {
                     msg.channel.send("You don't own a nation! Type \"" + config.prefix + "register\" to register for one.")
                 } else {
-                    var checkKey = mhp.MapgameBotUtilFunctions.makeCheckKey(5)
-                    var url = `http://mapgame-hosting.crumble-technologies.co.uk/PlayerActions/MakeMapClaim?mapgameID=${guildID}&nationID=${msg.author.id}&checkKey=${checkKey}`
+                    mapgameClient.db.ref("discord-servers/" + guildID + "/config/customOrIrlNation").once("value", (snapshot1) => {
+                        if (snapshot1.val() == "irl") {
+                            msg.channel.send("You cannot make map claims on an irl nation mapgame!")
+                        } else {
+                            var checkKey = mhp.MapgameBotUtilFunctions.makeCheckKey(5)
+                            var url = `http://mapgame-hosting.crumble-technologies.co.uk/PlayerActions/MakeMapClaim?mapgameID=${guildID}&nationID=${msg.author.id}&checkKey=${checkKey}`
 
-                    var ref = mapgameClient.db.ref("discord-check-keys/" + msg.author.id + "/map-claim")
-                    ref.set(guildID + "|" + checkKey)
+                            var ref = mapgameClient.db.ref("discord-check-keys/" + msg.author.id + "/map-claim")
+                            ref.set(guildID + "|" + checkKey)
 
-                    msg.channel.send("Check your DMs!")
-                    msg.author.send("Click the link below to make your map claim:\n" + url)
+                            msg.channel.send("Check your DMs!")
+                            msg.author.send("Click the link below to make your map claim:\n" + url)
+                        }
+                    })
                 }
             })
             break;
