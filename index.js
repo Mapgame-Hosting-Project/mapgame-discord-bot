@@ -102,42 +102,47 @@ async function handleCommand(msg, command, args) {
 
             var userCheckRef = mapgameClient.db.ref("discord-servers/" + guildID + "/nationApplications/" + msg.member.id + "/status")
             userCheckRef.once("value", (snapshot) => {
-                switch (snapshot.val()) {
-                    case "accepted":
-                        msg.channel.send("You are already a nation! Ask an admin if you can swap nations or create a new one.")
-                        ableToContinueRegistration = false
-                        break;
+                if (!snapshot.exists()) {
+                    ableToContinueRegistration = true
+                    return
+                } else {
+                    switch (snapshot.val()) {
+                        case "accepted":
+                            msg.channel.send("You are already a nation! Ask an admin if you can swap nations or create a new one.")
+                            ableToContinueRegistration = false
+                            break;
 
-                    case "rejected":
-                        msg.channel.send("Bad news: your original application was rejected. Good news: that means you can submit a new one!")
-                        ableToContinueRegistration = true
-                        break;
+                        case "rejected":
+                            msg.channel.send("Bad news: your original application was rejected. Good news: that means you can submit a new one!")
+                            ableToContinueRegistration = true
+                            break;
 
-                    case "pendingApproval":
-                        msg.channel.send("You're old application is still pending...type " + this.config.prefix + "cancel-registration to cancel it, then run this command again.")
-                        ableToContinueRegistration = false
-                        break;
+                        case "pendingApproval":
+                            msg.channel.send("You're old application is still pending...type " + this.config.prefix + "cancel-registration to cancel it, then run this command again.")
+                            ableToContinueRegistration = false
+                            break;
 
-                    case "cancelled":
-                        ableToContinueRegistration = true
-                        break;
+                        case "cancelled":
+                            ableToContinueRegistration = true
+                            break;
 
-                    default:
-                        ableToContinueRegistration = true
-                        break;
+                        default:
+                            ableToContinueRegistration = true
+                            break;
+                    }
+                }
+            }).then(() => {
+                if (ableToContinueRegistration) {
+                    var checkKey = mhp.MapgameBotUtilFunctions.makeCheckKey(5)
+                    var url = `http://mapgame-hosting.crumble-technologies.co.uk/PlayerActions/RegisterNation?mapgameID=${guildID}&discordUserID=${msg.author.id}&checkKey=${checkKey}`
+
+                    var ref = mapgameClient.db.ref("discord-check-keys/" + msg.author.id + "/register-nation")
+                    ref.set(guildID + "|" + checkKey)
+
+                    msg.channel.send("Check your DMs!")
+                    msg.author.send("Click the link below to register your nation:\n" + url)
                 }
             })
-
-            if (ableToContinueRegistration) {
-                var checkKey = mhp.MapgameBotUtilFunctions.makeCheckKey(5)
-                var url = `http://mapgame-hosting.crumble-technologies.co.uk/PlayerActions/RegisterNation?mapgameID=${guildID}&discordUserID=${msg.author.id}&checkKey=${checkKey}`
-
-                var ref = mapgameClient.db.ref("discord-check-keys/" + msg.author.id + "/register-nation")
-                ref.set(guildID + "|" + checkKey)
-
-                msg.channel.send("Check your DMs!")
-                msg.author.send("Click the link below to register your nation:\n" + url)
-            }
             break;
 
         case "cr":
