@@ -240,16 +240,16 @@ async function handleCommand(msg, command, args) {
             var userID
             try {
                 userID = new mhp.MapgameBotUtilFunctions(mapgameClient.discordClient).getUserFromMention(args[0]).id
+
+                try {
+                    parseInt(args[1])
+                    mhp.MoneyManager.subtractMoney(mapgameClient.db, guildID, userID, args[1])
+                } catch {
+                    msg.channel.send("That is not a valid amount of money!")
+                }
             } catch {
                 msg.channel.send("That is not a valid user mention!")
             }
-            try {
-                parseInt(args[1])
-                mhp.MoneyManager.subtractMoney(mapgameClient.db, guildID, userID, args[1])
-            } catch {
-                msg.channel.send("That is not a valid amount of money!")
-            }
-
             break;
 
         default:
