@@ -17,6 +17,6 @@
     },
     "homepage": "https://github.com/Phyrik/mapgame-discord-bot#readme",
     "dependencies": {
-        "mapgame-hosting-project": "^0.21.2"
+        "mapgame-hosting-project": "^0.21.3"
     }
 }
