@@ -215,19 +215,20 @@ async function handleCommand(msg, command, args) {
                 break;
             }
 
-            var userID
-            try {
-                userID = new mhp.MapgameBotUtilFunctions(mapgameClient.discordClient).getUserFromMention(args[0]).id
-            } catch {
-                msg.channel.send("That is not a valid user mention!")
-            }
-            try {
-                parseInt(args[1])
-                mhp.MoneyManager.addMoney(mapgameClient.db, guildID, userID, args[1])
-            } catch {
-                msg.channel.send("That is not a valid amount of money!")
-            }
+            var userID = new mhp.MapgameBotUtilFunctions(mapgameClient.discordClient).getUserFromMention(args[0]).id
+            var result = await mhp.MoneyManager.addMoney(mapgameClient.db, guildID, userID, args[1])
+            switch (result) {
+                case "success":
+                    msg.channel.send("Successfully took money out of user's GDP.")
+                    break;
 
+                case "fail":
+                    msg.channel.send("Sorry, I wasn't able to do that. Please try again.")
+                    break;
+
+                default:
+                    break;
+            }
             break;
 
         case "subtract-money":
@@ -237,18 +238,19 @@ async function handleCommand(msg, command, args) {
                 break;
             }
 
-            var userID
-            try {
-                userID = new mhp.MapgameBotUtilFunctions(mapgameClient.discordClient).getUserFromMention(args[0]).id
+            var userID = new mhp.MapgameBotUtilFunctions(mapgameClient.discordClient).getUserFromMention(args[0]).id
+            var result = await mhp.MoneyManager.subtractMoney(mapgameClient.db, guildID, userID, args[1])
+            switch (result) {
+                case "success":
+                    msg.channel.send("Successfully took money out of user's GDP.")
+                    break;
 
-                try {
-                    parseInt(args[1])
-                    mhp.MoneyManager.subtractMoney(mapgameClient.db, guildID, userID, args[1])
-                } catch {
-                    msg.channel.send("That is not a valid amount of money!")
-                }
-            } catch {
-                msg.channel.send("That is not a valid user mention!")
+                case "fail":
+                    msg.channel.send("Sorry, I wasn't able to do that. Please try again.")
+                    break;
+
+                default:
+                    break;
             }
             break;
 
