@@ -208,6 +208,50 @@ async function handleCommand(msg, command, args) {
             })
             break;
 
+        case "add-money":
+        case "add-m":
+            if (!msg.member.hasPermission("ADMINISTRATOR")) {
+                msg.channel.send("You do not have the correct permissions to use this command. Ask an admin to help you out.")
+                break;
+            }
+
+            var userID
+            try {
+                userID = new mhp.MapgameBotUtilFunctions(mapgameClient.discordClient).getUserFromMention(args[0]).id
+            } catch {
+                msg.channel.send("That is not a valid user mention!")
+            }
+            try {
+                parseInt(args[1])
+                mhp.MoneyManager.addMoney(mapgameClient.db, guildID, userID, args[1])
+            } catch {
+                msg.channel.send("That is not a valid amount of money!")
+            }
+
+            break;
+
+        case "subtract-money":
+        case "subtract-m":
+            if (!msg.member.hasPermission("ADMINISTRATOR")) {
+                msg.channel.send("You do not have the correct permissions to use this command. Ask an admin to help you out.")
+                break;
+            }
+
+            var userID
+            try {
+                userID = new mhp.MapgameBotUtilFunctions(mapgameClient.discordClient).getUserFromMention(args[0]).id
+            } catch {
+                msg.channel.send("That is not a valid user mention!")
+            }
+            try {
+                parseInt(args[1])
+                mhp.MoneyManager.subtractMoney(mapgameClient.db, guildID, userID, args[1])
+            } catch {
+                msg.channel.send("That is not a valid amount of money!")
+            }
+
+            break;
+
         default:
             break;
     }
